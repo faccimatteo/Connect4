@@ -192,7 +192,7 @@ app.get('/users/:username/friends', auth, (req,res,next) => {
   if(req.user.username != req.params.username)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user"});
 
-  user.getModel().findOne({username: req.params.username}).select({friends:1}).exec((friends)=>{
+  user.getModel().findOne({username: req.params.username}).select({friends:1}).then((friends)=>{
     return res.status(200).json(friends);
     
   }).catch((reason)=>{
@@ -208,7 +208,7 @@ app.get('/users/:username/friendsRequests', auth, (req,res,next) => {
   if(req.user.username != req.params.username)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user"});
 
-  user.getModel().findOne({username: req.params.username}).select({pendingRequests:1}).exec((requests)=>{
+  user.getModel().findOne({username: req.params.username}).select({pendingRequests:1}).then((requests)=>{
     return res.status(200).json(requests);
     
   }).catch((reason)=>{
@@ -221,8 +221,8 @@ app.get('/users/:username/friendsRequests', auth, (req,res,next) => {
 // Main route to get matches
 app.route("/matches").get(auth, (req,res,next) => {
   // We find all the matches and we output them in JSON format
-  match.getModel().find({},(matches)=>{
-    res.status(200).json(matches);
+  match.getModel().find({}).then((matches)=>{
+    return res.status(200).json(matches);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -230,23 +230,32 @@ app.route("/matches").get(auth, (req,res,next) => {
   // Inserting a new match with post
   if(!req.user.moderator)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
-
+   
   // We insert a new match from the data included in the body
-  match.getModel().find({},(matches)=>{
-    if(!req.params.player1 || !req.params.player2 || !req.params.spectators || !req.params.winner || !req.params.ended)
-      return next({ statusCode:404, error: true, errormessage: "Check fields in body request.\n Fields that must be inserted are: player1, player2, spectators, winner,ended"});
-    
-      
+  // after checking if all the required fields are present
+
+
+
+  if(req.params.player1 == null || req.params.player2 == null || req.params.spectators == null)
+    return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, spectators, winner, ended"});
+
+  match.getModel().create({
+    player1: req.params.player1,
+    player2: req.params.player2,
+    spectators: req.params.spectators,
+
   }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
-  })
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+  });
+
+  return res.status(200).statusMessage = "Match successfully added into database";
 });
 
 // We want to know which players played/ are playing the match
 app.get("/matches/:id/players", auth, (req,res,next) => {
   
   var myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({player1:1,player2:1}).exec((matches)=>{
+  match.getModel().findOne(myId).select({player1:1,player2:1}).then((matches)=>{
     res.status(200).json(matches);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -257,7 +266,7 @@ app.get("/matches/:id/players", auth, (req,res,next) => {
 app.get("/matches/:id/observers", auth, (req,res,next) => {
 
   var myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({spectators:1}).where('spectators[1]').equals(true).exec((observers)=>{
+  match.getModel().findOne(myId).select({spectators:1}).where('spectators[1]').equals(true).then((observers)=>{
     res.status(200).json(observers);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -268,7 +277,7 @@ app.get("/matches/:id/observers", auth, (req,res,next) => {
 app.get("/matches/:id/spectators", auth, (req,res,next) => {
   
   var myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({spectators:1}).exec((spectators)=>{
+  match.getModel().findOne(myId).select({spectators:1}).then((spectators)=>{
     res.status(200).json(spectators);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -280,7 +289,7 @@ app.get("/matches/:id/spectators", auth, (req,res,next) => {
 app.get("/matches/:id/winner", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({winner:1}).exec((winner)=>{
+  match.getModel().findOne(myId).select({winner:1}).then((winner)=>{
     res.status(200).json(winner);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -292,7 +301,7 @@ app.get("/matches/:id/loser", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId('req.params.id');
   match.getModel().findOne(myId).select({winner:1}).then((query)=>{
-    const players = match.getSchema().methods.getPlayers();
+    const players = match.getSchema().methods[0];
 
     // Checking for the opposite player 
     for(let i in players){

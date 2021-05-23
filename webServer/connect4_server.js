@@ -29,6 +29,8 @@ const io = require("socket.io"); // Socket.io websocket library
 var ios = undefined;
 var app = express();
 var auth = jwt({ secret: process.env.JWT_SECRET });
+//function that could be useful
+var isModerator;
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
 // Automatically parse JWT token if there's one on the request's
@@ -64,8 +66,13 @@ app.route('/users').get(auth, (req, res, next) => {
     var u = user.newUser(req.body);
     if (!req.body.username || !req.body.password || !req.body.name || !req.body.surname || !req.body.moderator) {
         return next({ statusCode: 404, error: true,
-            errormessage: "Check fields in body request.\n Fields that must be insert are: username, name, surname, moderator" });
+            errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator" });
     }
+    // Checking if the user already exist
+    const checkingUser = user.getModel().findOne({ username: req.params.username });
+    if (!checkingUser)
+        return next({ statusCode: 404, error: true, errormessage: "User's username already exists. Try with a different username" });
+    // Inserting a new user inside the system
     const temporaryPassword = crypto.randomBytes(16).toString('hex');
     u.setPassword(temporaryPassword);
     // Set user as a moderator if defined
@@ -117,7 +124,7 @@ app.get('/users/:username/friends', auth, (req, res, next) => {
     // To find user's friends the user that send the request has to be that user
     if (req.user.username != req.params.username)
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user" });
-    user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).exec((friends) => {
+    user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).then((friends) => {
         return res.status(200).json(friends);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
@@ -128,35 +135,50 @@ app.get('/users/:username/friendsRequests', auth, (req, res, next) => {
     // To find user's friends the user that send the request has to be that user
     if (req.user.username != req.params.username)
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user" });
-    user.getModel().findOne({ username: req.params.username }).select({ pendingRequests: 1 }).exec((requests) => {
+    user.getModel().findOne({ username: req.params.username }).select({ pendingRequests: 1 }).then((requests) => {
         return res.status(200).json(requests);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
 // Main route to get matches
-app.get("/matches", auth, (req, res, next) => {
+app.route("/matches").get(auth, (req, res, next) => {
     // We find all the matches and we output them in JSON format
-    match.getModel().find({}, (matches) => {
-        res.status(200).json(matches);
+    match.getModel().find({}).then((matches) => {
+        return res.status(200).json(matches);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
+}).post(auth, (req, res, next) => {
+    // Inserting a new match with post
+    if (!req.user.moderator)
+        return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
+    // We insert a new match from the data included in the body
+    // after checking if all the required fields are present
+    //if(req.params.player1 == null || req.params.player2 == null || req.params.spectators == null)
+    //  return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, spectators, winner, ended"});
+    match.getModel().create({
+        player1: req.params.player1,
+        player2: req.params.player2,
+        spectators: req.params.spectators,
+    }); /*).catch((reason)=>{
+      return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+    });*/
+    return res.status(200).statusMessage = "Match successfully added into database";
 });
 // We want to know which players played/ are playing the match
 app.get("/matches/:id/players", auth, (req, res, next) => {
     var myId = mongoose.Types.ObjectId('req.params.id');
-    match.getModel().findOne(myId).select({ player1: 1, player2: 1 }).exec((matches) => {
+    match.getModel().findOne(myId).select({ player1: 1, player2: 1 }).then((matches) => {
         res.status(200).json(matches);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
 // We want to how many players are watching the match
-// DA TESTARE
 app.get("/matches/:id/observers", auth, (req, res, next) => {
     var myId = mongoose.Types.ObjectId('req.params.id');
-    match.getModel().findOne(myId).select({ spectators: 1 }).where('spectators[1]').equals(true).exec((observers) => {
+    match.getModel().findOne(myId).select({ spectators: 1 }).where('spectators[1]').equals(true).then((observers) => {
         res.status(200).json(observers);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
@@ -165,7 +187,7 @@ app.get("/matches/:id/observers", auth, (req, res, next) => {
 // We want to know how many players have seen the match
 app.get("/matches/:id/spectators", auth, (req, res, next) => {
     var myId = mongoose.Types.ObjectId('req.params.id');
-    match.getModel().findOne(myId).select({ spectators: 1 }).exec((spectators) => {
+    match.getModel().findOne(myId).select({ spectators: 1 }).then((spectators) => {
         res.status(200).json(spectators);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
@@ -174,19 +196,23 @@ app.get("/matches/:id/spectators", auth, (req, res, next) => {
 //TODO: controllare se funziona HTTPS
 // We want to know the winner of a match
 app.get("/matches/:id/winner", auth, (req, res, next) => {
-    var myId = mongoose.Types.ObjectId('req.params.id');
-    match.getModel().findOne(myId).select({ winner: 1 }).exec((winner) => {
+    const myId = mongoose.Types.ObjectId('req.params.id');
+    match.getModel().findOne(myId).select({ winner: 1 }).then((winner) => {
         res.status(200).json(winner);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
 // We want to know the loser of a match
-// TODO: DA MODIFICARE POICHE' NON C'E' IL CAMPO LOSER
 app.get("/matches/:id/loser", auth, (req, res, next) => {
-    var myId = mongoose.Types.ObjectId('req.params.id');
-    match.getModel().findOne(myId).select({ loser: 1 }).exec((loser) => {
-        res.status(200).json(loser);
+    const myId = mongoose.Types.ObjectId('req.params.id');
+    match.getModel().findOne(myId).select({ winner: 1 }).then((query) => {
+        const players = match.getSchema().methods[0];
+        // Checking for the opposite player 
+        for (let i in players) {
+            if (!(i === query.winner))
+                res.status(200).json({ "loser": i });
+        }
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });

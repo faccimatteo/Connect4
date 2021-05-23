@@ -91,8 +91,6 @@ userSchema.methods.setDefault = function () {
     this.win = 0;
     this.loss = 0;
     this.draw = 0;
-    this.friends = new String();
-    this.pendingRequests = new String();
 };
 userSchema.methods.getName = function () {
     return this.name;

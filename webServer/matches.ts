@@ -31,11 +31,11 @@ var matchSchema = new Schema<Match>({
     }],
     winner:   {
         type: mongoose.SchemaTypes.String,
-        required: true
+        required: false
     },
     ended:   {
         type: mongoose.SchemaTypes.Boolean,
-        required: true,
+        required: false,
         default: false
     },
     
@@ -51,7 +51,7 @@ matchSchema.methods.getPlayers = function():string[] {
 }
 
 matchSchema.methods.getSpectators = function():string[] {
-    return this.spectators;
+    return this.spectators[0];
 }
 
 matchSchema.methods.getWinner = function():string{
