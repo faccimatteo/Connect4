@@ -254,9 +254,8 @@ app.get("/matches/:id/players", auth, (req,res,next) => {
 });
 
 // We want to how many players are watching the match
-// DA TESTARE
 app.get("/matches/:id/observers", auth, (req,res,next) => {
-  
+
   var myId = mongoose.Types.ObjectId('req.params.id');
   match.getModel().findOne(myId).select({spectators:1}).where('spectators[1]').equals(true).exec((observers)=>{
     res.status(200).json(observers);
