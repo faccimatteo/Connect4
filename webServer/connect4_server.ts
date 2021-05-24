@@ -109,21 +109,21 @@ app.route('/users').get(auth, (req,res,next) => {
   if(!req.user.moderator)
     return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
-  var u = user.newUser( req.body );
-  if(!req.body.username || !req.body.password || !req.body.name || !req.body.surname || !req.body.moderator) {
+  if(req.body.username == null|| req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null) {
     return next({ statusCode:404, error: true, 
       errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator"} );
 
   }
 
   // Checking if the user already exist
-  const checkingUser = user.getModel().findOne({username:req.params.username});
-  if(!checkingUser)
+  const checkingUser = user.getModel().findOne({username:req.body.username});
+  if(checkingUser != null)
     return next({ statusCode:404, error: true, errormessage: "User's username already exists. Try with a different username"});
 
-  // Inserting a new user inside the system
-  const temporaryPassword = crypto.randomBytes(16).toString('hex');
-  u.setPassword(temporaryPassword);
+  var u = user.newUser( req.body );
+  
+  // Inserting a new user inside the system with a temporaray password
+  u.setPassword(req.body.password);
     
   // Set user as a moderator if defined
   if(req.body.moderator)
@@ -135,7 +135,7 @@ app.route('/users').get(auth, (req,res,next) => {
 
   // Saving the new user on the db 'users'
   u.save().then( (data) => {
-    return res.status(200).json({ error: false, errormessage: "", id: data._id });
+    return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id });
   }).catch( (reason) => {
     if( reason.code === 11000 )
       return next({statusCode:404, error:true, errormessage: "User already exists"} );
@@ -162,8 +162,15 @@ app.route('/users/:username').get(auth, (req,res,next) => {
   if(!req.user.moderator)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
-  user.getModel().deleteOne({username:req.params.username},(succ)=>{
-    return next({ statusCode:200, error: false, errormessage: "User " + req.params.username + " successfully from the DB"}); 
+  const userInterested = user.getModel().findOne({"username":req.params.username});
+
+  // Checking if the document exists
+  if(userInterested != null){
+    return next({ statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"}); 
+  }
+  
+  user.getModel().deleteOne({username:req.params.username}).then(()=>{
+    return res.status(200).json('User ' + req.params.username + ' successfully deleted from the DB'); 
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -234,40 +241,155 @@ app.route("/matches").get(auth, (req,res,next) => {
   // We insert a new match from the data included in the body
   // after checking if all the required fields are present
 
-
-
-  if(req.params.player1 == null || req.params.player2 == null || req.params.spectators == null)
+  if(req.body.player1 == null || req.body.player2 == null || req.body.spectators == null || req.body.winner == null)
     return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, spectators, winner, ended"});
 
-  match.getModel().create({
-    player1: req.params.player1,
-    player2: req.params.player2,
-    spectators: req.params.spectators,
+  // Checking for fields correction 
+  if((req.body.winner != "" && req.body.winner != req.body.player1) || (req.body.winner != "" && req.body.winner != req.body.player1))
+    return next({ statusCode:404, error: true, errormessage: "The winner's name must be the same of the one of the two players"});
 
+  var endedValue;
+
+  if(req.body.winner != undefined)
+    endedValue = true;
+  else
+    endedValue = false;
+
+  match.getModel().create({
+    player1: req.body.player1,
+    player2: req.body.player2,
+    spectators: req.body.spectators,
+    winner: req.body.winner,
+    ended: endedValue
+  
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
   });
 
-  return res.status(200).statusMessage = "Match successfully added into database";
+  return res.status(200).json('New match correctly added');
 });
+
+// We want to delete a certain match given a defined ID
+app.delete("/matches/:id", auth, (req,res,next) => {
+  
+  if((req.params.id).length != 24)
+    return next({ statusCode:404, error: true, errormessage: "The match id must be 24 character length"}); 
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+
+  match.getModel().findOne({_id:myId}).then((result)=>{
+    
+    // Checking if the document exists
+    if(result == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+    
+  }).then(()=>{
+    
+    // Deleting the existing document 
+    match.getModel().deleteOne({_id:myId}).then(()=>{
+      return res.status(200).json('The match with the curret id (' + myId +') has been deleted');
+    }).catch((reason)=>{
+      return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+    });
+  })
+})
 
 // We want to know which players played/ are playing the match
 app.get("/matches/:id/players", auth, (req,res,next) => {
   
-  var myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({player1:1,player2:1}).then((matches)=>{
-    res.status(200).json(matches);
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({player1:1,player2:1}).then((players)=>{
+    res.status(200).json(players);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 });
 
+//TODO: FIXARE 
 // We want to how many players are watching the match
 app.get("/matches/:id/observers", auth, (req,res,next) => {
 
-  var myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({spectators:1}).where('spectators[1]').equals(true).then((observers)=>{
-    res.status(200).json(observers);
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+    
+    // Extracting only the users that are currently wacthing the match
+    const indexes = [];
+    for(var i=0;i<observers.spectators[1].length;i++){
+      if(observers.spectators[1][i])
+        indexes.push(i);
+    }
+    return res.status(200).json(observers);
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+  })
+});
+
+// We want to add a spectator to a certain match
+app.post("/matches/:id/addSpectator", auth, (req,res,next) => {
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+    
+    // If the request doesn't have the username field
+    if(req.body.username == null)
+      return next({ statusCode:404, error: true, errormessage: "You need to specify the user in the request with 'username'"});
+    
+    // If username is not present inside the DB
+    user.getModel().findOne({username:req.body.username}).then((result)=>{
+      if(result == null)
+        return next({ statusCode:404, error: true, errormessage: "The user you've tried to add is not a DB's user"});
+    }).then(()=>{
+
+      // Spectators' array modified with the added spectator
+      var newArray = observers.spectators;
+
+      newArray[0].push(req.body.username);
+      newArray[1].push(true);
+      
+      console.log(newArray);
+
+      // Adding spectators to the match 
+      match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+        return res.status(200).json('Spectator ' +req.body.username + ' has been successfully added.');
+      }).catch((reason)=>{
+        return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+      });
+      
+    })
+  
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+  })
+});
+
+// We want to add a spectator to a certain match
+app.post("/matches/:id/addSpectators", auth, (req,res,next) => {
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+
+    observers.spectators[0].push(req.body.username);
+    observers.spectators[1].push(true);
+    
+    // Spectators' array modified with the added spectator
+    var newArray = observers.spectators;
+
+    // Adding spectators to the match 
+    match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} })
+    
+    return res.status(200).json('Spectator ' +req.body.username + 'has been successfully added.');
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -276,9 +398,9 @@ app.get("/matches/:id/observers", auth, (req,res,next) => {
 // We want to know how many players have seen the match
 app.get("/matches/:id/spectators", auth, (req,res,next) => {
   
-  var myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({spectators:1}).then((spectators)=>{
-    res.status(200).json(spectators);
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((spectators)=>{
+    return res.status(200).json(spectators);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -288,9 +410,9 @@ app.get("/matches/:id/spectators", auth, (req,res,next) => {
 // We want to know the winner of a match
 app.get("/matches/:id/winner", auth, (req,res,next) => {
   
-  const myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({winner:1}).then((winner)=>{
-    res.status(200).json(winner);
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({winner:1}).then((winner)=>{
+    return res.status(200).json(winner);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -299,8 +421,8 @@ app.get("/matches/:id/winner", auth, (req,res,next) => {
 // We want to know the loser of a match
 app.get("/matches/:id/loser", auth, (req,res,next) => {
   
-  const myId = mongoose.Types.ObjectId('req.params.id');
-  match.getModel().findOne(myId).select({winner:1}).then((query)=>{
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({winner:1}).then((query)=>{
     const players = match.getSchema().methods[0];
 
     // Checking for the opposite player 
@@ -318,16 +440,16 @@ app.get("/matches/:id/loser", auth, (req,res,next) => {
 // NOTE: Always use HTTPS with Basic Authentication
 
 passport.use( new passportHTTP.BasicStrategy(
-  function(userdata, password, done) {
+  function(usersname,password, done) {
 
     // "done" callback (verify callback) documentation:  http://www.passportjs.org/docs/configure/
 
     // Delegate function we provide to passport middleware
     // to verify user credentials 
 
-    console.log("New login attempt from ".green + user );
+    console.log("New login attempt from ".green + usersname );
     
-    user.getModel().findOne( {username: userdata} , (err, user)=>{
+    user.getModel().findOne( {username: usersname} , (err, user)=>{
       if( err ) {
         return done( {statusCode: 500, error: true, errormessage:err} );
       }
