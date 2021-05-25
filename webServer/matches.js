@@ -28,7 +28,7 @@ var matchSchema = new mongoose_1.Schema({
     },
 });
 matchSchema.methods.getPlayers = function () {
-    const players = new Array[2];
+    const players = new String[2];
     players[0] = this.player1;
     players[1] = this.player2;
     return players;

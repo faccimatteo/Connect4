@@ -43,7 +43,7 @@ var matchSchema = new Schema<Match>({
 
 
 matchSchema.methods.getPlayers = function():string[] {
-    const players:string[] = new Array[2];
+    const players:string[] = new String[2];
     players[0] = this.player1;
     players[1] = this.player2;
     return players;

@@ -91,20 +91,19 @@ app.get("/", (req,res) => {
   })
 });
 
-// Managing get and post request of user at the same time
-app.route('/users').get(auth, (req,res,next) => {
+// Main route of users
+app.route('/users').get(auth, (req,res,next) => {// Return all users
 
   if(!req.user.moderator)
     return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
   user.getModel().find({}).then((users)=>{
-    console.log(users);
     return res.status(200).json(users);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 
-}).post(auth,(req,res,next) => {
+}).post(auth,(req,res,next) => {// Add a new user
   // Checking if the user who sent the request is a moderator
   if(!req.user.moderator)
     return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
@@ -115,13 +114,8 @@ app.route('/users').get(auth, (req,res,next) => {
 
   }
 
-  // Checking if the user already exist
-  const checkingUser = user.getModel().findOne({username:req.body.username});
-  if(checkingUser != null)
-    return next({ statusCode:404, error: true, errormessage: "User's username already exists. Try with a different username"});
-
   var u = user.newUser( req.body );
-  
+
   // Inserting a new user inside the system with a temporaray password
   u.setPassword(req.body.password);
     
@@ -138,52 +132,58 @@ app.route('/users').get(auth, (req,res,next) => {
     return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id });
   }).catch( (reason) => {
     if( reason.code === 11000 )
-      return next({statusCode:404, error:true, errormessage: "User already exists"} );
-    return next({ statusCode:404, error: true, errormessage: "DB error: "+reason.errmsg });
+      return next({statusCode:404, error:true, errormessage: "User already exists"});
+    return next({statusCode:404, error: true, errormessage: "DB error: " + reason.errmsg});
   })
-
+  
 });
 
 
-// We looking for a user with a certain username
-app.route('/users/:username').get(auth, (req,res,next) => {
+// Main route of users/:username
+app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with a certain username
 
   if(!req.user.moderator)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
   user.getModel().findOne({username: req.params.username}).then((user)=>{
-    return res.status(200).json(user);
+    if(user == null)
+      return next({ statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"});
+    else
+      return res.status(200).json(user);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 
-}).delete(auth, (req,res,next)=>{
+}).delete(auth, (req,res,next)=>{// Delete a user witrh a certain username
   // I can remove a user only if I am a moderator
   if(!req.user.moderator)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
-  const userInterested = user.getModel().findOne({"username":req.params.username});
-
-  // Checking if the document exists
-  if(userInterested != null){
+  user.getModel().findOne({username:req.params.username}).then((result)=>{
+    // Checking if the document exists
+  if(result == null)
     return next({ statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"}); 
-  }
-  
-  user.getModel().deleteOne({username:req.params.username}).then(()=>{
-    return res.status(200).json('User ' + req.params.username + ' successfully deleted from the DB'); 
-  }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+    else{
+      user.getModel().deleteOne({username:req.params.username}).then(()=>{
+        return res.status(200).json('User ' + req.params.username + ' successfully deleted from the DB'); 
+      }).catch((reason)=>{
+        return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+      })
+    }
   })
 });
 
-// We want to know the stats of a certain user
+// Return the stats of a certain user
 app.get('/users/:username/stats', auth, (req,res,next) => {
 
-  if(!req.user.moderator)
+  if(!req.user.moderator && (req.params.username != req.user.username))
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
   user.getModel().findOne({username: req.params.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
-    return res.status(200).json(stats);
+    if(stats == null)
+      return res.status(404).json("The user you are looking for is not present into the DB"); 
+    else
+      return res.status(200).json(stats);
 
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -192,7 +192,7 @@ app.get('/users/:username/stats', auth, (req,res,next) => {
 });
 
 
-// We want to know the friends of a certain user
+// Return friends of a certain user
 app.get('/users/:username/friends', auth, (req,res,next) => {
 
   // To find user's friends the user that send the request has to be that user
@@ -200,7 +200,10 @@ app.get('/users/:username/friends', auth, (req,res,next) => {
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user"});
 
   user.getModel().findOne({username: req.params.username}).select({friends:1}).then((friends)=>{
-    return res.status(200).json(friends);
+    if(friends == null)
+      return res.status(200).json("The user you are looking for is not present into the DB"); 
+    else
+      return res.status(200).json(friends);
     
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -208,12 +211,12 @@ app.get('/users/:username/friends', auth, (req,res,next) => {
 
 });
 
-// We want to know the friends request of a certain user
+// Return friends' request of a certain user
 app.get('/users/:username/friendsRequests', auth, (req,res,next) => {
 
   // To find user's friends the user that send the request has to be that user
   if(req.user.username != req.params.username)
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user"});
+      return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend requests you have to be that user"});
 
   user.getModel().findOne({username: req.params.username}).select({pendingRequests:1}).then((requests)=>{
     return res.status(200).json(requests);
@@ -225,16 +228,16 @@ app.get('/users/:username/friendsRequests', auth, (req,res,next) => {
 });
 
 
-// Main route to get matches
-app.route("/matches").get(auth, (req,res,next) => {
+// Main route of matches
+app.route("/matches").get(auth, (req,res,next) => {// Return all matches 
   // We find all the matches and we output them in JSON format
   match.getModel().find({}).then((matches)=>{
     return res.status(200).json(matches);
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
-}).post(auth, (req,res,next) => {
-  // Inserting a new match with post
+}).post(auth, (req,res,next) => {// Inserting a new match 
+  
   if(!req.user.moderator)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
    
@@ -248,29 +251,37 @@ app.route("/matches").get(auth, (req,res,next) => {
   if((req.body.winner != "" && req.body.winner != req.body.player1) || (req.body.winner != "" && req.body.winner != req.body.player1))
     return next({ statusCode:404, error: true, errormessage: "The winner's name must be the same of the one of the two players"});
 
-  var endedValue;
+  //TODO: FIXARE 
+  // Checking if players are inserted into a DB
+  user.getModel().findOne({username:req.body.player1}).then(()=>{
+    var endedValue;
 
-  if(req.body.winner != undefined)
-    endedValue = true;
-  else
-    endedValue = false;
+    if(req.body.winner != undefined)
+      endedValue = true;
+    else
+      endedValue = false;
 
-  match.getModel().create({
-    player1: req.body.player1,
-    player2: req.body.player2,
-    spectators: req.body.spectators,
-    winner: req.body.winner,
-    ended: endedValue
-  
+    match.getModel().create({
+      player1: req.body.player1,
+      player2: req.body.player2,
+      spectators: req.body.spectators,
+      winner: req.body.winner,
+      ended: endedValue
+    
+    }).then(()=>{
+      return res.status(200).json('New match correctly added');
+    }).catch((reason)=>{
+      return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+    });
+    
   }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-  });
-
-  return res.status(200).json('New match correctly added');
+    return next({ statusCode:404, error: true, errormessage: "Players must be DB users"}); 
+  })
+  
 });
 
-// We want to delete a certain match given a defined ID
-app.route("/matches/:id").delete(auth,(req,res,next) => {
+// Main rout of matches/:id
+app.route("/matches/:id").delete(auth,(req,res,next) => {// Delete a certain match given a defined ID
   
   if((req.params.id).length != 24)
     return next({ statusCode:404, error: true, errormessage: "The match id must be 24 character length"}); 
@@ -292,7 +303,7 @@ app.route("/matches/:id").delete(auth,(req,res,next) => {
       return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
     });
   })
-}).get(auth,(req,res,next) => {
+}).get(auth,(req,res,next) => {// Return a certain match given a defined ID
   
   if((req.params.id).length != 24)
     return next({ statusCode:404, error: true, errormessage: "The match id must be 24 character length"}); 
@@ -311,7 +322,7 @@ app.route("/matches/:id").delete(auth,(req,res,next) => {
   });
 })
 
-// We want to know which players played/ are playing the match
+// Return which players played/ are playing the match
 app.get("/matches/:id/players", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
@@ -322,7 +333,7 @@ app.get("/matches/:id/players", auth, (req,res,next) => {
   })
 });
 
-// We want to how many players are watching the match
+// Return which players are watching the match
 app.get("/matches/:id/observers", auth, (req,res,next) => {
 
   const myId = mongoose.Types.ObjectId(req.params.id);
@@ -346,7 +357,7 @@ app.get("/matches/:id/observers", auth, (req,res,next) => {
   })
 });
 
-// We want to add a spectator to a certain match
+// Add a spectator to a certain match
 app.post("/matches/:id/addSpectator/:username", auth, (req,res,next) => {
 
   const myId = mongoose.Types.ObjectId(req.params.id);
@@ -388,7 +399,7 @@ app.post("/matches/:id/addSpectator/:username", auth, (req,res,next) => {
   })
 });
 
-// We want to add a spectator to a certain match
+// Add spectators to a certain match
 app.post("/matches/:id/addSpectators", auth, (req,res,next) => {
 
   const myId = mongoose.Types.ObjectId(req.params.id);
@@ -424,7 +435,7 @@ app.post("/matches/:id/addSpectators", auth, (req,res,next) => {
   })
 });
 
-// We want to know how many players have seen the match
+// Return which players have seen the match
 app.get("/matches/:id/spectators", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
@@ -435,7 +446,7 @@ app.get("/matches/:id/spectators", auth, (req,res,next) => {
   })
 });
 
-// We want to set that a spectator is not watching a match anymore
+// Set that a spectator is not watching a match anymore
 app.delete("/matches/:id/:username", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
@@ -470,13 +481,13 @@ app.delete("/matches/:id/:username", auth, (req,res,next) => {
   })
 });
 
-//TODO: controllare se funziona HTTPS
-// We want to know the winner of a match
+
+// Return the winner of a match
 app.get("/matches/:id/winner", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
-  match.getModel().findOne({_id:myId}).select({winner:1}).then((winner)=>{
-    return res.status(200).json(winner);
+  match.getModel().findOne({_id:myId}).select({winner:1}).then((result)=>{
+    return res.status(200).json({"winner":result.winner});
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -486,13 +497,12 @@ app.get("/matches/:id/winner", auth, (req,res,next) => {
 app.get("/matches/:id/loser", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
-  match.getModel().findOne({_id:myId}).select({winner:1}).then((query)=>{
-    const players = match.getSchema().methods[0];
-
+  match.getModel().findOne({_id:myId}).select({winner:1,player1:1,player2:1}).then((query)=>{
+    const players = [String(query.player1),String(query.player2)];
     // Checking for the opposite player 
     for(let i in players){
-      if(!(i === query.winner))
-        res.status(200).json({"loser":i});
+      if(!(players[i] == String(query.winner)))
+        return res.status(200).json({"loser":players[i]});
     }
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -500,9 +510,7 @@ app.get("/matches/:id/loser", auth, (req,res,next) => {
 });
 
 
-// Configuring HTTP basic authentication strategy trough passport middleware.
-// NOTE: Always use HTTPS with Basic Authentication
-
+// Using HTTP basic authentication strategy with passport middleware.
 passport.use( new passportHTTP.BasicStrategy(
   function(usersname,password, done) {
 
@@ -638,11 +646,11 @@ mongoose.connect( 'mongodb://localhost:27017/connect4' )
     // passing the express application middleware. Then, we start listening
     // on port 8443 
     
-    /*https.createServer({
+    https.createServer({
       key: fs.readFileSync('keys/key.pem'),
       cert: fs.readFileSync('keys/cert.pem')
     }, app).listen(8443);
-    */
+    
   }
 ).catch(
   (err) => {
