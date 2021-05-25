@@ -270,7 +270,7 @@ app.route("/matches").get(auth, (req,res,next) => {
 });
 
 // We want to delete a certain match given a defined ID
-app.delete("/matches/:id", auth, (req,res,next) => {
+app.route("/matches/:id").delete(auth,(req,res,next) => {
   
   if((req.params.id).length != 24)
     return next({ statusCode:404, error: true, errormessage: "The match id must be 24 character length"}); 
@@ -292,6 +292,23 @@ app.delete("/matches/:id", auth, (req,res,next) => {
       return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
     });
   })
+}).get(auth,(req,res,next) => {
+  
+  if((req.params.id).length != 24)
+    return next({ statusCode:404, error: true, errormessage: "The match id must be 24 character length"}); 
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+
+  match.getModel().findOne({_id:myId}).then((result)=>{
+    
+    // Checking if the document exists
+    if(result == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+    
+    return res.status(200).json(result);
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+  });
 })
 
 // We want to know which players played/ are playing the match
@@ -305,7 +322,6 @@ app.get("/matches/:id/players", auth, (req,res,next) => {
   })
 });
 
-//TODO: FIXARE 
 // We want to how many players are watching the match
 app.get("/matches/:id/observers", auth, (req,res,next) => {
 
@@ -317,19 +333,21 @@ app.get("/matches/:id/observers", auth, (req,res,next) => {
       return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
     
     // Extracting only the users that are currently wacthing the match
-    const indexes = [];
+    const ourObservers = [];
     for(var i=0;i<observers.spectators[1].length;i++){
       if(observers.spectators[1][i])
-        indexes.push(i);
+        // If the spectator is currently watching the match is added to indexes
+        ourObservers.push(observers.spectators[0][i]);
     }
-    return res.status(200).json(observers);
+
+    return res.status(200).json({"observers": ourObservers});
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 });
 
 // We want to add a spectator to a certain match
-app.post("/matches/:id/addSpectator", auth, (req,res,next) => {
+app.post("/matches/:id/addSpectator/:username", auth, (req,res,next) => {
 
   const myId = mongoose.Types.ObjectId(req.params.id);
   match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
@@ -339,30 +357,30 @@ app.post("/matches/:id/addSpectator", auth, (req,res,next) => {
       return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
     
     // If the request doesn't have the username field
-    if(req.body.username == null)
+    if(req.params.username == null)
       return next({ statusCode:404, error: true, errormessage: "You need to specify the user in the request with 'username'"});
     
-    // If username is not present inside the DB
     user.getModel().findOne({username:req.body.username}).then((result)=>{
+      
+      // If username is not present inside the DB
       if(result == null)
         return next({ statusCode:404, error: true, errormessage: "The user you've tried to add is not a DB's user"});
-    }).then(()=>{
+      else{
 
-      // Spectators' array modified with the added spectator
-      var newArray = observers.spectators;
+        // Spectators' array modified with the added spectator
+        var newArray = observers.spectators;
 
-      newArray[0].push(req.body.username);
-      newArray[1].push(true);
+        newArray[0].push(req.params.username);
+        newArray[1].push(true);
       
-      console.log(newArray);
 
-      // Adding spectators to the match 
-      match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
-        return res.status(200).json('Spectator ' +req.body.username + ' has been successfully added.');
-      }).catch((reason)=>{
-        return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-      });
-      
+        // Adding spectators to the match 
+        match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+          return res.status(200).json('Spectator ' +req.params.username + ' has been successfully added.');
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+        });
+      }
     })
   
   }).catch((reason)=>{
@@ -379,17 +397,28 @@ app.post("/matches/:id/addSpectators", auth, (req,res,next) => {
     // Checking if the match exists
     if(observers == null)
       return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+    else{
 
-    observers.spectators[0].push(req.body.username);
-    observers.spectators[1].push(true);
-    
-    // Spectators' array modified with the added spectator
-    var newArray = observers.spectators;
+      // Checking if the users are present into the DB
+      for(let spect in req.body.usernames){
+        user.getModel().findOne({username:spect}).then((result)=>{
+          if(result == null)
+            return next({ statusCode:404, error: true, errormessage: "The user " + spect + " is not present into the DB"});    
+          
+          // Adding the relative spectator to the match
+          observers.spectators[0].push(spect);
+          observers.spectators[1].push(true);
+        });
+      }
 
-    // Adding spectators to the match 
-    match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} })
-    
-    return res.status(200).json('Spectator ' +req.body.username + 'has been successfully added.');
+      // Spectators' array modified with the added spectator
+      var newArray = observers.spectators;
+
+      // Adding spectators to the match 
+      match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} })
+      
+      return res.status(200).json('Spectators ' + req.body.usernames + ' have been successfully added.');
+    }
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -401,6 +430,41 @@ app.get("/matches/:id/spectators", auth, (req,res,next) => {
   const myId = mongoose.Types.ObjectId(req.params.id);
   match.getModel().findOne({_id:myId}).select({spectators:1}).then((spectators)=>{
     return res.status(200).json(spectators);
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+  })
+});
+
+// We want to set that a spectator is not watching a match anymore
+app.delete("/matches/:id/:username", auth, (req,res,next) => {
+  
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"}); 
+    
+    user.getModel().findOne({username:req.body.username}).then((result)=>{
+      
+      // If username is not present inside the DB
+      if(result == null)
+        return next({ statusCode:404, error: true, errormessage: "The user you've tried to delete is not a DB's user"});
+      else{
+
+        // Spectators' array modified with the added spectator
+        var newArray = observers.spectators;
+        newArray[1][newArray[0].indexOf(req.params.username)] = false;
+
+        // Adding spectators to the match 
+        match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+          return res.status(200).json('Spectator ' +req.params.username + ' is not watching the match anymore');
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+        });
+      }
+    })
+  
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
