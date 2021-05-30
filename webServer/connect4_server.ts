@@ -58,6 +58,7 @@ declare global {
     }
 }
 
+//TODO: need to fix socket usage: method have to use sockets to inform another users of operations.
 
 var ios = undefined;
 var app = express();
@@ -245,39 +246,49 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
   // after checking if all the required fields are present
 
   if(req.body.player1 == null || req.body.player2 == null || req.body.spectators == null || req.body.winner == null)
-    return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, spectators, winner, ended"});
+    return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, spectators, winner"});
 
   // Checking for fields correction 
   if((req.body.winner != "" && req.body.winner != req.body.player1) || (req.body.winner != "" && req.body.winner != req.body.player1))
     return next({ statusCode:404, error: true, errormessage: "The winner's name must be the same of the one of the two players"});
 
-  //TODO: FIXARE 
   // Checking if players are inserted into a DB
-  user.getModel().findOne({username:req.body.player1}).then(()=>{
-    var endedValue;
+  user.getModel().findOne({username:req.body.player1}).then((result)=>{
+    if(result == null)
+      return next({statusCode:404, error: true, errormessage: "The user you are trying to insert is not present into the db."});
+    else{
+      user.getModel().findOne({username:req.body.player2}).then((result)=>{
+        if(result == null)
+          return next({statusCode:404, error: true, errormessage: "The user you are trying to insert is not present into the db."});
+        else{
+          // The users are checked, now we can correctly insert the match
+          var endedValue;
 
-    if(req.body.winner != undefined)
-      endedValue = true;
-    else
-      endedValue = false;
+          if(req.body.winner != undefined)
+            endedValue = true;
+          else
+            endedValue = false;
 
-    match.getModel().create({
-      player1: req.body.player1,
-      player2: req.body.player2,
-      spectators: req.body.spectators,
-      winner: req.body.winner,
-      ended: endedValue
-    
-    }).then(()=>{
-      return res.status(200).json('New match correctly added');
-    }).catch((reason)=>{
-      return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-    });
-    
-  }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "Players must be DB users"}); 
+          match.getModel().create({
+            player1: req.body.player1,
+            player2: req.body.player2,
+            spectators: req.body.spectators,
+            winner: req.body.winner,
+            ended: endedValue
+          
+          }).then(()=>{
+            return res.status(200).json('New match correctly added');
+          }).catch((reason)=>{
+            return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+          });
+          
+        }
+      }).catch((reason)=>{
+        return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+      })
+        
+    }
   })
-  
 });
 
 // Main rout of matches/:id
@@ -414,24 +425,26 @@ app.post("/matches/:id/addSpectators", auth, (req,res,next) => {
       for(let spect in req.body.usernames){
         user.getModel().findOne({username:spect}).then((result)=>{
           if(result == null)
-            return next({ statusCode:404, error: true, errormessage: "The user " + spect + " is not present into the DB"});    
-          
-          // Adding the relative spectator to the match
-          observers.spectators[0].push(spect);
-          observers.spectators[1].push(true);
-        });
+            return next({ statusCode:404, error: true, errormessage: "The user " + req.body.usernames[spect] + " is not present into the DB"});    
+          else{
+            // Adding the relative spectator to the match
+            observers.spectators[0].push(spect);
+            observers.spectators[1].push(true);
+
+             // Spectators' array modified with the added spectator
+              var newArray = observers.spectators;
+
+              // Adding spectators to the match 
+              match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+                return res.status(200).json('Spectators ' + req.body.usernames + ' have been successfully added.');
+              }).catch((reason)=>{
+                return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+              })
+              
+          }
+        })
       }
-
-      // Spectators' array modified with the added spectator
-      var newArray = observers.spectators;
-
-      // Adding spectators to the match 
-      match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} })
-      
-      return res.status(200).json('Spectators ' + req.body.usernames + ' have been successfully added.');
-    }
-  }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+    } 
   })
 });
 
@@ -492,6 +505,58 @@ app.get("/matches/:id/winner", auth, (req,res,next) => {
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 });
+
+// Set the winner of the match
+app.get("/matches/:id/setWinner/:username", auth, (req,res,next) => {
+  
+  // Checking if the user that send the request is the admin user: just the admin user can register matches' winners.
+  if(req.user.username != 'admin'){
+    return next({ statusCode:404, error: true, errormessage: "You are not authorized to set a winner."});
+  }else{
+
+    const myId = mongoose.Types.ObjectId(req.params.id);
+    // Looking for a certain match
+    match.getModel().findOne({_id:myId}).then((result)=>{
+      
+      if(result == null)
+        return next({ statusCode:404, error: true, errormessage: "The match is not present inside the DB"});
+      else{
+
+        // Checking if players are inserted into a DB
+        match.getModel().findOne({_id:myId}).where('player1').equals(req.params.username).then((result)=>{
+          if(result == null){
+            match.getModel().findOne({_id:myId}).where('player2').equals(req.params.username).then((result)=>{
+              if(result == null)
+                return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
+              else{
+                // If the control flow pass, set the winner of the match
+                match.getModel().updateOne({ _id: myId}, { $set: { winner:  req.params.username} }).then(()=>{
+                  return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
+                }).catch((reason)=>{
+                    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+                });
+              }
+            }).catch((reason)=>{
+              return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+            });
+          }else{
+            // If the control flow pass, set the winner of the match
+            match.getModel().updateOne({ _id: myId}, { $set: { winner:  req.params.username} }).then(()=>{
+              return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
+            }).catch((reason)=>{
+                return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+            });
+          }  
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+        })
+      }
+    }).catch((reason)=>{
+      return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+    })
+  }
+});
+
 
 // We want to know the loser of a match
 app.get("/matches/:id/loser", auth, (req,res,next) => {
