@@ -10,6 +10,7 @@ export interface User extends Document {
     name: string,
     surname: string,
     moderator: boolean, // can be a moderator or not
+    firstAccess: boolean, // used to change password on first access
     salt: string,   // salt is a random string that will be mixed with the actual password before hashing
     digest: string, // digest of the clear password + salt
     win: number,
@@ -50,6 +51,10 @@ var userSchema = new Schema<User>( {
     moderator:  {
         type: mongoose.SchemaTypes.Boolean,
         required: true 
+    },
+    firstAccess:  {
+        type: mongoose.SchemaTypes.Boolean,
+        required: false, 
     },
     profilepic: {
         type: mongoose.SchemaTypes.Buffer,

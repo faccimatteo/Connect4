@@ -24,6 +24,10 @@ var userSchema = new mongoose_1.Schema({
         type: mongoose.SchemaTypes.Boolean,
         required: true
     },
+    firstAccess: {
+        type: mongoose.SchemaTypes.Boolean,
+        required: false,
+    },
     profilepic: {
         type: mongoose.SchemaTypes.Buffer,
         contentType: String,

@@ -11,6 +11,7 @@ export interface Match extends Document{
     getPlayers: ()=>string[],
     getSpectators: ()=>string[],
     getWinner: ()=>string,
+    getLoser: ()=>string,
     setEnding: ()=>void,
     hasEnded: ()=>boolean
 }
@@ -30,6 +31,10 @@ var matchSchema = new Schema<Match>({
         required: true
     }],
     winner:   {
+        type: mongoose.SchemaTypes.String,
+        required: false
+    },
+    loser:   {
         type: mongoose.SchemaTypes.String,
         required: false
     },
@@ -55,6 +60,10 @@ matchSchema.methods.getSpectators = function():string[] {
 
 matchSchema.methods.getWinner = function():string{
     return this.winner;
+}
+
+matchSchema.methods.getLoser = function():string{
+    return this.loser;
 }
 
 matchSchema.methods.setEnding = function():void{

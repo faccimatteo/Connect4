@@ -1,0 +1,36 @@
+<div id='container'>
+  <form [formGroup]="addressForm">
+    <mat-card class="login-form">
+      <mat-card-header>
+        <mat-card-title>Fill with your credentials</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="row">
+          <div class="col">
+            <mat-form-field class="full-width">
+              <input matInput #username placeholder="Username" formControlName="username">
+              <mat-error *ngIf="addressForm.controls['username'].hasError('required')">
+                Username is <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field class="full-width">
+              <input matInput #password type="password" placeholder="Password" formControlName="password">
+              <mat-error *ngIf="addressForm.controls['password'].hasError('required')">
+                Password is <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <mat-checkbox #remember_me formControlName="remember_me" labelPosition="after" color="primary">Ricordami</mat-checkbox>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="login(username.value, password.value, remember_me.checked)">Login</button>
+      </mat-card-actions>
+    </mat-card>
+  </form>
+</div>
+<router-outlet></router-outlet>

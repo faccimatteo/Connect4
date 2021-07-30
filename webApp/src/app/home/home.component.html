@@ -1,0 +1,7 @@
+<div *ngIf="is_remembered_user()">
+    <app-bubble-menu></app-bubble-menu>
+    <app-chat></app-chat>
+</div>
+<div *ngIf="!is_remembered_user()">
+    <app-login></app-login>
+</div>

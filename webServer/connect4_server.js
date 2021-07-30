@@ -18,7 +18,6 @@ const mongoose = require("mongoose");
 const match = require("./matches");
 const user = require("./users");
 const express = require("express");
-const bodyparser = require("body-parser"); // body-parser middleware is used to parse the request body and
 // directly provide a JavaScript object if the "Content-type" is
 // application/json
 const passport = require("passport"); // authentication middleware for Express
@@ -27,27 +26,34 @@ const jsonwebtoken = require("jsonwebtoken"); // JWT generation
 const jwt = require("express-jwt"); // JWT parsing middleware for express
 const cors = require("cors"); // Enable CORS middleware
 const io = require("socket.io"); // Socket.io websocket library
-var ios = undefined;
-var app = express();
-var auth = jwt({ secret: process.env.JWT_SECRET });
-//function that could be useful
-var isModerator;
+//TODO: need to fix socket usage: method have to use sockets to inform another users of operations.
+const app = express();
+const auth = jwt({ secret: process.env.JWT_SECRET });
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
 // Automatically parse JWT token if there's one on the request's
-app.use(bodyparser.json());
+app.use(express.json());
+// Setting up Pusher 
+const Pusher = require("pusher");
+const pusher = new Pusher({
+    appId: "1242312",
+    key: "2eb653c8780c9ebbe91e",
+    secret: "cedef58c4729c1d12c7c",
+    cluster: "eu",
+    useTLS: true
+});
 app.use((req, res, next) => {
     console.log("------------------------------------------------".inverse);
     console.log("New request for: " + req.url);
     console.log("Method: " + req.method);
     next();
 });
-// Add API routes to express application
+// Adding API routes to express application
 // App's root: return to the client every possible endpoints of our app
 app.get("/", (req, res) => {
     res.status(200).json({
         api_version: "0.0.1",
-        endpoints: ["/users", "/matches", "/login"]
+        endpoints: ["/users", "/matches", "/messages", "/login"]
     });
 });
 // Main route of users
@@ -151,6 +157,9 @@ app.get('/users/:username/friendsRequests', auth, (req, res, next) => {
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
+});
+app.get('/users/:username/setPassword', auth, (req, res, next) => {
+    return res.status(200).json(req.user);
 });
 // Main route of matches
 app.route("/matches").get(auth, (req, res, next) => {
@@ -359,6 +368,44 @@ app.delete("/matches/:id/:username", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
+// Set the winner of the match
+app.get("/matches/:id/setWinner/:username", auth, (req, res, next) => {
+    // Checking if the user that send the request is the admin user: just the admin user can register matches' winners.
+    if (req.user.username != 'admin') {
+        return next({ statusCode: 404, error: true, errormessage: "You are not authorized to set a winner/loser." });
+    }
+    else {
+        const myId = mongoose.Types.ObjectId(req.params.id);
+        // Looking for a certain match
+        match.getModel().findOne({ _id: myId }).then((result) => {
+            if (result == null)
+                return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
+            else {
+                // Checking if players are inserted into a DB
+                match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
+                    const players = [String(result.player1), String(result.player2)];
+                    if (players.includes(String(req.params.username)) == false)
+                        return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
+                    else {
+                        // If the control flow pass, set the winner of the match
+                        match.getModel().updateOne({ _id: myId }, { $set: { winner: req.params.username } }).then(() => {
+                            user.getModel().findOne({ username: req.params.username }).select({ win: 1 }).then((result) => {
+                                var updated_wins_number = result.win + 1;
+                                user.getModel().updateOne({ username: req.params.username }, { $set: { updated_wins_number } }).then(() => {
+                                    return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
+                                });
+                            });
+                        }).catch((reason) => {
+                            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                        });
+                    }
+                }).catch((reason) => {
+                    return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                });
+            }
+        });
+    }
+});
 // Return the winner of a match
 app.get("/matches/:id/winner", auth, (req, res, next) => {
     const myId = mongoose.Types.ObjectId(req.params.id);
@@ -368,61 +415,62 @@ app.get("/matches/:id/winner", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
-// Set the winner of the match
-app.get("/matches/:id/setWinner/:username", auth, (req, res, next) => {
-    const myId = mongoose.Types.ObjectId(req.params.id);
-    // Looking for a certain match
-    match.getModel().findOne({ _id: myId }).then((result) => {
-        if (result == null)
-            return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
-        else {
-            // Checking if players are inserted into a DB
-            match.getModel().findOne({ _id: myId }).where('player1').equals(req.params.username).then((result) => {
-                if (result == null) {
-                    match.getModel().findOne({ _id: myId }).where('player2').equals(req.params.username).then((result) => {
-                        if (result == null)
-                            return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
-                        else {
-                            // If the control flow pass, set the winner of the match
-                            match.getModel().updateOne({ _id: myId }, { $set: { winner: req.params.username } }).then(() => {
-                                return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
-                            }).catch((reason) => {
-                                return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+// Set the match drawn
+//app.get("/matches/:id/draw", auth, (req,res,next) => {
+// Set the loser of the match
+app.get("/matches/:id/setLoser/:username", auth, (req, res, next) => {
+    // Checking if the user that send the request is the admin user: just the admin user can register matches' winners.
+    if (req.user.username != 'admin') {
+        return next({ statusCode: 404, error: true, errormessage: "You are not authorized to set a winner/loser." });
+    }
+    else {
+        const myId = mongoose.Types.ObjectId(req.params.id);
+        // Looking for a certain match
+        match.getModel().findOne({ _id: myId }).then((result) => {
+            if (result == null)
+                return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
+            else {
+                // Checking if players are inserted into a DB
+                match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
+                    const players = [String(result.player1), String(result.player2)];
+                    if (players.includes(String(req.params.username)) == false)
+                        return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
+                    else {
+                        // If the control flow pass, set the loser of the match
+                        match.getModel().updateOne({ _id: myId }, { $set: { loser: req.params.username } }).then(() => {
+                            user.getModel().findOne({ username: req.params.username }).select({ loss: 1 }).then((result) => {
+                                var updated_loss_number = result.loss + 1;
+                                user.getModel().updateOne({ username: req.params.username }, { $set: { updated_loss_number } }).then(() => {
+                                    return res.status(200).json('Loser ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
+                                });
                             });
-                        }
-                    }).catch((reason) => {
-                        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                    });
-                }
-                else {
-                    // If the control flow pass, set the winner of the match
-                    match.getModel().updateOne({ _id: myId }, { $set: { winner: req.params.username } }).then(() => {
-                        return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
-                    }).catch((reason) => {
-                        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                    });
-                }
-            }).catch((reason) => {
-                return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-            });
-        }
-    }).catch((reason) => {
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-    });
+                        }).catch((reason) => {
+                            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                        });
+                    }
+                }).catch((reason) => {
+                    return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                });
+            }
+        });
+    }
 });
 // We want to know the loser of a match
 app.get("/matches/:id/loser", auth, (req, res, next) => {
     const myId = mongoose.Types.ObjectId(req.params.id);
-    match.getModel().findOne({ _id: myId }).select({ winner: 1, player1: 1, player2: 1 }).then((query) => {
-        const players = [String(query.player1), String(query.player2)];
-        // Checking for the opposite player 
-        for (let i in players) {
-            if (!(players[i] == String(query.winner)))
-                return res.status(200).json({ "loser": players[i] });
-        }
+    match.getModel().findOne({ _id: myId }).select({ loser: 1 }).then((loser) => {
+        return res.status(200).json({ "loser ": loser });
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
+});
+// Pusher chat API
+app.post("/messages", auth, (req, res, next) => {
+    pusher.trigger("chat", "message", {
+        username: req.body.username,
+        message: req.body.message
+    });
+    res.json([]);
 });
 // Using HTTP basic authentication strategy with passport middleware.
 passport.use(new passportHTTP.BasicStrategy(function (usersname, password, done) {
@@ -450,10 +498,11 @@ app.get("/login", passport.authenticate('basic', { session: false }), (req, res,
     // has been injected into req.user
     // We now generate a JWT with the useful user data
     // and return it as response
-    var tokendata = {
+    const tokendata = {
         id: req.user.id,
         username: req.user.username,
-        moderator: req.user.moderator
+        moderator: req.user.moderator,
+        firstAccess: false
     };
     console.log("Login granted. Token has been generated");
     var token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
@@ -474,7 +523,7 @@ app.use((req, res, next) => {
 });
 // Connect to mongodb and launch the HTTP server trough Express
 // by using async promises
-mongoose.connect('mongodb://localhost:27017/connect4')
+mongoose.connect('mongodb://localhost:27017/connect4', { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
     console.log("Connected to MongoDB");
     return user.getModel().findOne({});
@@ -494,24 +543,9 @@ mongoose.connect('mongodb://localhost:27017/connect4')
     else {
         console.log("Admin user already exists");
     }
-    return match.getModel().findOne({});
-}).then((doc) => {
-    if (!doc) {
-        //Inserting a test match
-        var newmatch = match.getModel().create({
-            player1: "pippo",
-            player2: "pluto",
-            spectators: [[], []],
-            winner: "pluto",
-            ended: true
-        });
-    }
-    else {
-        console.log("A match already exists");
-    }
 }).then(() => {
     let server = http.createServer(app);
-    ios = io(server);
+    const ios = io(server);
     ios.on('connection', function (client) {
         console.log("Socket.io client connected".green);
     });

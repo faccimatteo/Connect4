@@ -21,6 +21,10 @@ var matchSchema = new mongoose_1.Schema({
         type: mongoose.SchemaTypes.String,
         required: false
     },
+    loser: {
+        type: mongoose.SchemaTypes.String,
+        required: false
+    },
     ended: {
         type: mongoose.SchemaTypes.Boolean,
         required: false,
@@ -38,6 +42,9 @@ matchSchema.methods.getSpectators = function () {
 };
 matchSchema.methods.getWinner = function () {
     return this.winner;
+};
+matchSchema.methods.getLoser = function () {
+    return this.loser;
 };
 matchSchema.methods.setEnding = function () {
     this.ended = true;
