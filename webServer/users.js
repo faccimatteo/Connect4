@@ -28,10 +28,9 @@ var userSchema = new mongoose_1.Schema({
         type: mongoose.SchemaTypes.Boolean,
         required: false,
     },
-    profilepic: {
-        type: mongoose.SchemaTypes.Buffer,
-        contentType: String,
-        required: false,
+    profilePic: {
+        type: mongoose.SchemaTypes.String,
+        required: true,
     },
     salt: {
         type: mongoose.SchemaTypes.String,

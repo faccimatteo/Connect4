@@ -129,6 +129,8 @@ export class ClientHttpService {
   }
 
 
+
+
   get_id():string {
     return (jwt_decode(this.token) as TokenData).id;
   }
@@ -139,6 +141,11 @@ export class ClientHttpService {
 
   is_moderator():boolean {
     return (jwt_decode(this.token) as TokenData).moderator;
+  }
+
+  // Return the profile pic in Base64 format
+  get_profile_pic():string {
+
   }
 
   is_first_access():boolean {

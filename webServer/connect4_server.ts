@@ -10,6 +10,7 @@ if( !process.env.JWT_SECRET ) {
 }
 
 import fs = require('fs');                      // File System module
+import path = require('path');                  // Provides utilities for working with file and directory paths
 import http = require('http');                  // HTTP module
 import https = require('https');                // HTTPS module
 import colors = require('colors');              // Colors module for debugging 
@@ -20,7 +21,6 @@ import mongoose = require('mongoose');
 import crypto = require('crypto');
 import {Match} from './matches';
 import * as match from './matches';
-
 import { User } from './users';
 import * as user from './users';
 
@@ -37,9 +37,48 @@ import jwt = require('express-jwt');            // JWT parsing middleware for ex
 
 import cors = require('cors');                  // Enable CORS middleware
 import io = require('socket.io');               // Socket.io websocket library
+import { Readable } from 'stream';
 
 declare global {
   namespace Express {
+        // We add Mutler namespace with request interface to recognize file in request 
+        namespace Multer {
+          /** Object containing file metadata and access information. */
+          interface File {
+              /** Name of the form field associated with this file. */
+              fieldname: string;
+              /** Name of the file on the uploader's computer. */
+              originalname: string;
+              /**
+               * Value of the `Content-Transfer-Encoding` header for this file.
+               * @deprecated since July 2015
+               * @see RFC 7578, Section 4.7
+               */
+              encoding: string;
+              /** Value of the `Content-Type` header for this file. */
+              mimetype: string;
+              /** Size of the file in bytes. */
+              size: number;
+              /**
+               * A readable stream of this file. Only available to the `_handleFile`
+               * callback for custom `StorageEngine`s.
+               */
+              stream: Readable;
+              /** `DiskStorage` only: Directory to which this file has been uploaded. */
+              destination: string;
+              /** `DiskStorage` only: Name of this file within `destination`. */
+              filename: string;
+              /** `DiskStorage` only: Full path to the uploaded file. */
+              path: string;
+              /** `MemoryStorage` only: A Buffer containing the entire file. */
+              buffer: Buffer;
+          }
+      }
+
+        interface Request {
+          file?: Multer.File | undefined;
+      }
+
       interface User {
         id: string,
         username: string,
@@ -56,6 +95,7 @@ declare global {
         pendingRequests: string[],  
       }
     }
+
 }
 
 //TODO: need to fix socket usage: method have to use sockets to inform another users of operations.
@@ -67,6 +107,8 @@ const auth = jwt( {secret: process.env.JWT_SECRET} );
 
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
+
+app.use(express.urlencoded({ extended: false }))
 
 // Automatically parse JWT token if there's one on the request's
 app.use(express.json());
@@ -81,6 +123,20 @@ const pusher = new Pusher({
   cluster: "eu",
   useTLS: true
 });
+
+// Setting up Mutler for storing uploaded files
+const multer = require('multer');
+ 
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads')
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname)
+    }
+});
+ 
+const upload = multer({ storage: storage });
 
 
 app.use( (req,res,next) => {
@@ -102,7 +158,7 @@ app.get("/", (req,res) => {
 });
 
 // Main route of users
-app.route('/users').get(auth, (req,res,next) => {// Return all users
+app.get('/users', auth, (req,res,next) => {// Return all users
 
   if(!req.user.moderator)
     return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
@@ -112,13 +168,46 @@ app.route('/users').get(auth, (req,res,next) => {// Return all users
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
+});
 
-}).post(auth,(req,res,next) => {// Add a new user
+app.post('/users/addModerator', auth, (req,res,next) => {
+  // Adding a new moderator
   // Checking if the user who sent the request is a moderator
   if(!req.user.moderator)
     return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
-  if(req.body.username == null|| req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null) {
+  if(req.body.username == null|| req.body.password == null) {
+    return next({ statusCode:404, error: true, 
+      errormessage: "Check fields in body request.\n Fields that must be inserted are: username and password"} );
+
+  }
+
+  var u = user.newUser( req.body );
+
+  // Inserting a new user inside the system with a temporaray password
+  u.setPassword(req.body.password);
+  
+  u.firstAccess = true;
+  // Set user as a moderator 
+  u.setModerator();
+  u.setDefault();
+
+  // Saving the new user on the db 'users'
+  u.save().then( (data) => {
+    return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id });
+  }).catch( (reason) => {
+    if( reason.code === 11000 )
+      return next({statusCode:11000, error:true, errormessage: "User already exists"});
+    return next({statusCode:404, error: true, errormessage: "DB error: " + reason.errmsg});
+  })
+  
+});
+
+app.post('/users/addUser', upload.single('profilePic'), auth, (req,res,next) => {
+  // Adding a new user
+  // Checking if the user who sent the request is a moderator
+
+  if(req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.firstAccess == null || req.body.profilePic == null) {
     return next({ statusCode:404, error: true, 
       errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator"} );
 
@@ -128,26 +217,38 @@ app.route('/users').get(auth, (req,res,next) => {// Return all users
 
   // Inserting a new user inside the system with a temporaray password
   u.setPassword(req.body.password);
-    
-  // Set user as a moderator if defined
-  if(req.body.moderator)
-    u.setModerator();
-    else 
-      u.moderator = false;
+  
+  if(req.body.firstAccess)
+    req.body.firstAccess = false;
+  u.moderator = false;
 
   u.setDefault();
+
+  // Uploading user's profile pic as Base64 image
+  u.profilePic = req.body.profilePic;
 
   // Saving the new user on the db 'users'
   u.save().then( (data) => {
     return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id });
   }).catch( (reason) => {
     if( reason.code === 11000 )
-      return next({statusCode:404, error:true, errormessage: "User already exists"});
+      return next({statusCode:11000, error:true, errormessage: "User already exists"});
     return next({statusCode:404, error: true, errormessage: "DB error: " + reason.errmsg});
   })
   
 });
 
+app.get('/profilepics', auth, (req, res) => {
+  user.getModel().findOne({}, (err, items) => {
+      if (err) {
+          console.log(err);
+          res.status(500).send('An error occurred');
+      }
+      else {
+          res.status(200).json(items.profilePic);
+      }
+  });
+});
 
 // Main route of users/:username
 app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with a certain username
@@ -186,17 +287,23 @@ app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with
 // Return the stats of a certain user
 app.get('/users/:username/stats', auth, (req,res,next) => {
 
-  if(!req.user.moderator && (req.params.username != req.user.username))
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
+  user.getModel().findOne({username:req.params.username}).select({friends:1}).then((friendsList) =>{
+    
+    let friends = friendsList.getFriends();
 
-  user.getModel().findOne({username: req.params.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
+    // Checking if the user is a moderator or the user himself
+    if(!req.user.moderator || (req.params.username != req.user.username) || !friends.includes(req.user.username))
+      return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see this user's statistic you must be that user, a moderator or a friend of that user"});
+
+    user.getModel().findOne({username: req.params.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
     if(stats == null)
       return res.status(404).json("The user you are looking for is not present into the DB"); 
     else
       return res.status(200).json(stats);
 
-  }).catch((reason)=>{
+    }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+    })
   })
 
 });
@@ -722,7 +829,7 @@ mongoose.connect( 'mongodb://localhost:27017/connect4' , { useNewUrlParser: true
         name: "admin",
         surname: "admin",
       });
-    
+
       u.setModerator();
       u.setPassword("admin");
       u.setDefault();

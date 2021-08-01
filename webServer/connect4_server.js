@@ -31,6 +31,7 @@ const app = express();
 const auth = jwt({ secret: process.env.JWT_SECRET });
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
+app.use(express.urlencoded({ extended: false }));
 // Automatically parse JWT token if there's one on the request's
 app.use(express.json());
 // Setting up Pusher 
@@ -42,6 +43,17 @@ const pusher = new Pusher({
     cluster: "eu",
     useTLS: true
 });
+// Setting up Mutler for storing uploaded files
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 app.use((req, res, next) => {
     console.log("------------------------------------------------".inverse);
     console.log("New request for: " + req.url);
@@ -57,7 +69,7 @@ app.get("/", (req, res) => {
     });
 });
 // Main route of users
-app.route('/users').get(auth, (req, res, next) => {
+app.get('/users', auth, (req, res, next) => {
     if (!req.user.moderator)
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
     user.getModel().find({}).then((users) => {
@@ -65,30 +77,66 @@ app.route('/users').get(auth, (req, res, next) => {
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
-}).post(auth, (req, res, next) => {
+});
+app.post('/users/addModerator', auth, (req, res, next) => {
+    // Adding a new moderator
     // Checking if the user who sent the request is a moderator
     if (!req.user.moderator)
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
-    if (req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null) {
+    if (req.body.username == null || req.body.password == null) {
         return next({ statusCode: 404, error: true,
-            errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator" });
+            errormessage: "Check fields in body request.\n Fields that must be inserted are: username and password" });
     }
     var u = user.newUser(req.body);
     // Inserting a new user inside the system with a temporaray password
     u.setPassword(req.body.password);
-    // Set user as a moderator if defined
-    if (req.body.moderator)
-        u.setModerator();
-    else
-        u.moderator = false;
+    u.firstAccess = true;
+    // Set user as a moderator 
+    u.setModerator();
     u.setDefault();
     // Saving the new user on the db 'users'
     u.save().then((data) => {
         return res.status(200).json({ error: false, errormessage: "", message: "User successfully added with the id below", id: data._id });
     }).catch((reason) => {
         if (reason.code === 11000)
-            return next({ statusCode: 404, error: true, errormessage: "User already exists" });
+            return next({ statusCode: 11000, error: true, errormessage: "User already exists" });
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason.errmsg });
+    });
+});
+app.post('/users/addUser', upload.single('profilePic'), auth, (req, res, next) => {
+    // Adding a new user
+    // Checking if the user who sent the request is a moderator
+    if (req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.firstAccess == null) {
+        return next({ statusCode: 404, error: true,
+            errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator" });
+    }
+    var u = user.newUser(req.body);
+    // Inserting a new user inside the system with a temporaray password
+    u.setPassword(req.body.password);
+    if (req.body.firstAccess)
+        req.body.firstAccess = false;
+    u.moderator = false;
+    u.setDefault();
+    // Uploading user's profile pic as Base64 image
+    u.profilePic = req.body.profilePic;
+    // Saving the new user on the db 'users'
+    u.save().then((data) => {
+        return res.status(200).json({ error: false, errormessage: "", message: "User successfully added with the id below", id: data._id });
+    }).catch((reason) => {
+        if (reason.code === 11000)
+            return next({ statusCode: 11000, error: true, errormessage: "User already exists" });
+        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason.errmsg });
+    });
+});
+app.get('/profilepics', auth, (req, res) => {
+    user.getModel().findOne({}, (err, items) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send('An error occurred');
+        }
+        else {
+            res.status(200).json(items.profilePic);
+        }
     });
 });
 // Main route of users/:username
@@ -122,15 +170,19 @@ app.route('/users/:username').get(auth, (req, res, next) => {
 });
 // Return the stats of a certain user
 app.get('/users/:username/stats', auth, (req, res, next) => {
-    if (!req.user.moderator && (req.params.username != req.user.username))
-        return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
-    user.getModel().findOne({ username: req.params.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
-        if (stats == null)
-            return res.status(404).json("The user you are looking for is not present into the DB");
-        else
-            return res.status(200).json(stats);
-    }).catch((reason) => {
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+    user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).then((friendsList) => {
+        let friends = friendsList.getFriends();
+        // Checking if the user is a moderator or the user himself
+        if (!req.user.moderator || (req.params.username != req.user.username) || !friends.includes(req.user.username))
+            return next({ statusCode: 404, error: true, errormessage: "Unauthorized: to see this user's statistic you must be that user, a moderator or a friend of that user" });
+        user.getModel().findOne({ username: req.params.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
+            if (stats == null)
+                return res.status(404).json("The user you are looking for is not present into the DB");
+            else
+                return res.status(200).json(stats);
+        }).catch((reason) => {
+            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+        });
     });
 });
 // Return friends of a certain user
@@ -157,9 +209,6 @@ app.get('/users/:username/friendsRequests', auth, (req, res, next) => {
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
-});
-app.get('/users/:username/setPassword', auth, (req, res, next) => {
-    return res.status(200).json(req.user);
 });
 // Main route of matches
 app.route("/matches").get(auth, (req, res, next) => {

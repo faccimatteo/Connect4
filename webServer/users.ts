@@ -11,6 +11,7 @@ export interface User extends Document {
     surname: string,
     moderator: boolean, // can be a moderator or not
     firstAccess: boolean, // used to change password on first access
+    profilePic: string, // profile pic stored in Base64
     salt: string,   // salt is a random string that will be mixed with the actual password before hashing
     digest: string, // digest of the clear password + salt
     win: number,
@@ -56,10 +57,9 @@ var userSchema = new Schema<User>( {
         type: mongoose.SchemaTypes.Boolean,
         required: false, 
     },
-    profilepic: {
-        type: mongoose.SchemaTypes.Buffer,
-        contentType: String,
-        required: false,
+    profilePic: {
+        type: mongoose.SchemaTypes.String,
+        required: true,
     },
     salt:   {
         type: mongoose.SchemaTypes.String,
