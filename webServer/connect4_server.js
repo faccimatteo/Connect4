@@ -103,10 +103,10 @@ app.post('/users/addModerator', auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason.errmsg });
     });
 });
-app.post('/users/addUser', upload.single('profilePic'), auth, (req, res, next) => {
+app.post('/users/addUser', (req, res, next) => {
     // Adding a new user
     // Checking if the user who sent the request is a moderator
-    if (req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.firstAccess == null) {
+    if (req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.firstAccess == null || req.body.profilePic == null) {
         return next({ statusCode: 404, error: true,
             errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator" });
     }
@@ -114,7 +114,7 @@ app.post('/users/addUser', upload.single('profilePic'), auth, (req, res, next) =
     // Inserting a new user inside the system with a temporaray password
     u.setPassword(req.body.password);
     if (req.body.firstAccess)
-        req.body.firstAccess = false;
+        req.body.firstAccess = true;
     u.moderator = false;
     u.setDefault();
     // Uploading user's profile pic as Base64 image
@@ -128,14 +128,14 @@ app.post('/users/addUser', upload.single('profilePic'), auth, (req, res, next) =
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason.errmsg });
     });
 });
-app.get('/profilepics', auth, (req, res) => {
-    user.getModel().findOne({}, (err, items) => {
+app.get('/users/:username/profilepic', auth, (req, res) => {
+    user.getModel().findOne({ username: req.params.username }, (err, user) => {
         if (err) {
             console.log(err);
             res.status(500).send('An error occurred');
         }
         else {
-            res.status(200).json(items.profilePic);
+            res.status(200).json({ "profilepic": user.profilePic });
         }
     });
 });
@@ -551,7 +551,7 @@ app.get("/login", passport.authenticate('basic', { session: false }), (req, res,
         id: req.user.id,
         username: req.user.username,
         moderator: req.user.moderator,
-        firstAccess: false
+        firstAccess: req.user.firstAccess,
     };
     console.log("Login granted. Token has been generated");
     var token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });

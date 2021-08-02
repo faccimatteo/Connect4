@@ -1,0 +1,88 @@
+<!--Sign up page-->
+<div id='container'>
+  <form [formGroup]="addressForm">
+    <mat-card class="login-form">
+      <mat-card-header>
+        <mat-card-title>{{pageTitle}}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="row">
+          <div class="col col-lg-2 col-md-2 col-sm-2">
+          </div>
+          <div class="col col-lg-8 col-md-8 col-sm-8">
+            <mat-form-field class="full-width">
+              <input matInput #username type="text" placeholder="Username" formControlName="username">
+              <mat-error *ngIf="addressForm.controls['username'].hasError('required')">
+                Username is <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div class="col col-lg-2 col-md-2 col-sm-2">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col col-lg-4 col-md-4 col-sm-4">
+            <mat-form-field class="full-width">
+              <input matInput #name type="text" placeholder="Name" formControlName="name">
+              <mat-error *ngIf="addressForm.controls['name'].hasError('required')">
+                Name is <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div class="col col-lg-4 col-md-4 col-sm-4">
+            <mat-form-field class="full-width">
+              <input matInput  #surname type="text" placeholder="Surname" formControlName="surname">
+              <mat-error *ngIf="addressForm.controls['surname'].hasError('required')">
+                Surname is <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+      </mat-card-content>
+      <mat-card-content>
+        <div class="row">
+          <div class="col col-lg-4 col-md-4 col-sm-4">
+            <mat-form-field class="full-width">
+              <input matInput #password [type]="hide_password ? 'password' : 'text'" placeholder="Password" formControlName="password">
+              <button mat-icon-button matSuffix (click)="hide_password = !hide_password" [attr.aria-label]="'Hide password'" [attr.aria-pressed]="hide_password">
+                <mat-icon>{{hide_password ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
+              <mat-error *ngIf="addressForm.controls['password'].hasError('required')">
+                Password is <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div class="col col-lg-4 col-md-4 col-sm-4">
+            <mat-form-field class="full-width">
+              <input matInput  #confirm_password [type]="hide_confirm_password ? 'password' : 'text'" placeholder="Confirm password" formControlName="confirm_password">
+              <button mat-icon-button matSuffix (click)="hide_confirm_password = !hide_confirm_password" [attr.aria-label]="'Hide password'" [attr.aria-pressed]="hide_confirm_password">
+                <mat-icon>{{hide_confirm_password ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
+              <mat-error *ngIf="addressForm.controls['confirm_password'].hasError('required')">
+                Confirm password
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <input type="file" #uploadedfile id="fileUpload" (change)="handleUpload($event)" name="fileUpload"
+        multiple="multiple" accept="image/*" formControlName="profilepic"/>
+          <mat-error *ngIf="addressForm.controls['profilepic'].hasError('required')">
+            Image profile is required
+          </mat-error>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-card *ngIf="differentPassword" class="error">Le due nuove password devono essere uguali</mat-card>
+            <mat-card *ngIf="requestSucceded" class="success">Ti sei registrato correttamente</mat-card>
+          </div>
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="set_user(username.value, name.value, surname.value, password.value, confirm_password.value)">Login</button>
+      </mat-card-actions>
+    </mat-card>
+  </form>
+</div>
+
+

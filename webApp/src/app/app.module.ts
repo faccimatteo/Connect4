@@ -27,7 +27,7 @@ import { MatTableModule } from '@angular/material/table';
 import { NgChatModule } from 'ng-chat';
 import { ChatComponent } from './chat/chat.component';
 import { FormsModule } from '@angular/forms';
-import { ResetPasswordComponent } from './reset-password/reset-password.component';
+import { SignupComponent } from './signup/signup.component';
 
 
 @NgModule({
@@ -39,7 +39,7 @@ import { ResetPasswordComponent } from './reset-password/reset-password.componen
     BubbleMenuComponent,
     StatsComponent,
     ChatComponent,
-    ResetPasswordComponent,
+    SignupComponent,
   ],
   imports: [
     BrowserModule,

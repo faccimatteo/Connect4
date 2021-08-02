@@ -69,7 +69,7 @@ export class ClientHttpService {
       }));
   }
 
-  register( user: any ): Observable<any> {
+  register_user( username: string, name:string, surname:string, password:string, profilepic:string): Observable<any> {
     const options = {
       headers: new HttpHeaders({
         'cache-control': 'no-cache',
@@ -77,10 +77,18 @@ export class ClientHttpService {
       })
     };
 
-    // TODO: CONTROLLARE SE L'ENDPOINT PER L'AGGIUNTA DELL'UTENTE E' CORRETTO
-    return this.http.post( this.url + '/users', user, options ).pipe(
+    // Passing user as body field
+    return this.http.post( this.url + '/users/addUser', {
+      username:username,
+      name:name,
+      surname:surname,
+      password:password,
+      profilePic:profilepic
+
+    }, options ).pipe(
       tap( (data) => {
-        console.log(JSON.stringify(data) );
+        console.log("User added to database");
+        console.log(data)
       })
     );
 
@@ -128,6 +136,23 @@ export class ClientHttpService {
       )
   }
 
+  get_profile_pic():Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get( this.url + '/users/' + this.get_username() + '/profilepic',  options ).pipe(
+      map((res: any) => res),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s profile pic'))
+    )
+  }
+
 
 
 
@@ -141,11 +166,6 @@ export class ClientHttpService {
 
   is_moderator():boolean {
     return (jwt_decode(this.token) as TokenData).moderator;
-  }
-
-  // Return the profile pic in Base64 format
-  get_profile_pic():string {
-
   }
 
   is_first_access():boolean {
