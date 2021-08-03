@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { ClientHttpService } from '../client-http.service';
 
 @Component({
@@ -9,6 +11,7 @@ import { ClientHttpService } from '../client-http.service';
 })
 export class SignupComponent implements OnInit {
 
+  public duplicateUser = false;
   public requestSucceded = false;
   public pageTitle = 'Register yourself';
   public differentPassword = false;
@@ -26,7 +29,7 @@ export class SignupComponent implements OnInit {
     profilepic: [null, Validators.required],
   });
 
-  constructor(private fb: FormBuilder, private http:ClientHttpService) {}
+  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:Router) {}
 
   ngOnInit() {
   }
@@ -36,12 +39,23 @@ export class SignupComponent implements OnInit {
     if(password != confirm_password)
       this.differentPassword = true;
     else{
-      this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
-        this.requestSucceded = true;
-      });
+      this.http.find_user(username).subscribe(
+        () => {
+          this.duplicateUser = true;
+        }
+      ).add(()=>{
+        // If the
+        if(!this.duplicateUser)
+          this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
+            this.requestSucceded = true;
+            this.router.navigate(['/home']);
+            // Snackbar di benvenuto
+          })
+      })
     }
 
   }
+
   handleUpload(event) {
 
     const file = event.target.files[0];
@@ -49,6 +63,7 @@ export class SignupComponent implements OnInit {
     reader.readAsDataURL(file);
     reader.onload = () => {
       this.profilepic = reader.result as string;
+      console.log(this.profilepic)
     };
   }
 

@@ -26,14 +26,14 @@ const jsonwebtoken = require("jsonwebtoken"); // JWT generation
 const jwt = require("express-jwt"); // JWT parsing middleware for express
 const cors = require("cors"); // Enable CORS middleware
 const io = require("socket.io"); // Socket.io websocket library
-//TODO: need to fix socket usage: method have to use sockets to inform another users of operations.
 const app = express();
 const auth = jwt({ secret: process.env.JWT_SECRET });
+const bodyParser = require('body-parser');
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
-app.use(express.urlencoded({ extended: false }));
-// Automatically parse JWT token if there's one on the request's
-app.use(express.json());
+// Setting payload size limit
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb' }));
 // Setting up Pusher 
 const Pusher = require("pusher");
 const pusher = new Pusher({
@@ -98,24 +98,24 @@ app.post('/users/addModerator', auth, (req, res, next) => {
     u.save().then((data) => {
         return res.status(200).json({ error: false, errormessage: "", message: "User successfully added with the id below", id: data._id });
     }).catch((reason) => {
-        if (reason.code === 11000)
-            return next({ statusCode: 11000, error: true, errormessage: "User already exists" });
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason.errmsg });
+        return next({ statusCode: 500, error: true, errormessage: reason.code + ': ' + reason.errmsg });
     });
 });
 app.post('/users/addUser', (req, res, next) => {
     // Adding a new user
-    // Checking if the user who sent the request is a moderator
-    if (req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.firstAccess == null || req.body.profilePic == null) {
+    if (req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.profilePic == null || req.body.firstAccess == null) {
         return next({ statusCode: 404, error: true,
-            errormessage: "Check fields in body request.\n Fields that must be inserted are: username, name, surname, moderator" });
+            errormessage: "Check fields in body request.\n Fields that must be inserted are: username, password, name, surname, moderator, profilePic, firstAccess" });
     }
     var u = user.newUser(req.body);
     // Inserting a new user inside the system with a temporaray password
     u.setPassword(req.body.password);
-    if (req.body.firstAccess)
-        req.body.firstAccess = true;
-    u.moderator = false;
+    u.name = req.body.name;
+    u.surname = req.body.surname;
+    // Setting of moderator, this endpoint is used to register moderators and normal users
+    u.moderator = req.body.moderator;
+    // Setting of firstAccess
+    u.firstAccess = req.body.firstAccess;
     u.setDefault();
     // Uploading user's profile pic as Base64 image
     u.profilePic = req.body.profilePic;
@@ -123,9 +123,7 @@ app.post('/users/addUser', (req, res, next) => {
     u.save().then((data) => {
         return res.status(200).json({ error: false, errormessage: "", message: "User successfully added with the id below", id: data._id });
     }).catch((reason) => {
-        if (reason.code === 11000)
-            return next({ statusCode: 11000, error: true, errormessage: "User already exists" });
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason.errmsg });
+        return next({ statusCode: 500, error: true, errormessage: reason.code + ': ' + reason.errmsg });
     });
 });
 app.get('/users/:username/profilepic', auth, (req, res) => {
@@ -173,7 +171,7 @@ app.get('/users/:username/stats', auth, (req, res, next) => {
     user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).then((friendsList) => {
         let friends = friendsList.getFriends();
         // Checking if the user is a moderator or the user himself
-        if (!req.user.moderator || (req.params.username != req.user.username) || !friends.includes(req.user.username))
+        if (!req.user.moderator && (req.params.username != req.user.username) && !friends.includes(req.user.username))
             return next({ statusCode: 404, error: true, errormessage: "Unauthorized: to see this user's statistic you must be that user, a moderator or a friend of that user" });
         user.getModel().findOne({ username: req.params.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
             if (stats == null)

@@ -23,10 +23,10 @@ export class LoginComponent {
   ngOnInit() {
   }
 
+  // TODO: gestire gli errori in caso di login scorretto
   login(username:string, password:string, remember_me:boolean){
     this.userlogin.login( username, password, remember_me).subscribe( (d) => {
       console.log('Login granted: ' + JSON.stringify(d) );
-      this.error_message = undefined
       this.router.navigate(['/home']);
     }, (err) => {
       console.log('Login error: ' + JSON.stringify(err) );

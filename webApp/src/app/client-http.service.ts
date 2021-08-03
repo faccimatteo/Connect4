@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { tap, catchError, map } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import jwt_decode from "jwt-decode";
-import { ParticipantResponse } from 'ng-chat';
+import { ParticipantResponse, User } from 'ng-chat';
+import { Router } from '@angular/router';
 
 interface TokenData {
   id:string,
@@ -25,11 +26,12 @@ export class ClientHttpService {
 
   private stats = '';
   private token = '';
+  public user = '';
   public url = 'http://localhost:8080';
 
 
   //Inside the constructor we instantiate the token if present
-  constructor(private http:HttpClient) {
+  constructor(private http:HttpClient, private router:Router) {
     console.log('Client HTTP service is up')
 
     // We load our token from localStorage
@@ -59,17 +61,18 @@ export class ClientHttpService {
     };
 
     return this.http.get( this.url + '/login',  options ).pipe(
-      tap( (data:any) => {
+      tap((data:any) => {
 
         this.token = data.token;
         // Just in case we setted remember the token is setted
-        if ( remember ) {
+        if( remember){
           localStorage.setItem('connect4_token', this.token );
         }
       }));
   }
 
-  register_user( username: string, name:string, surname:string, password:string, profilepic:string): Observable<any> {
+  register_user( username: string, name:string, surname:string, password:string, profilepic:string):Observable<any>{
+    // Creating header for the post request
     const options = {
       headers: new HttpHeaders({
         'cache-control': 'no-cache',
@@ -78,26 +81,47 @@ export class ClientHttpService {
     };
 
     // Passing user as body field
-    return this.http.post( this.url + '/users/addUser', {
+    return this.http.post(this.url + '/users/addUser', {
       username:username,
       name:name,
       surname:surname,
       password:password,
+      moderator:false,
+      firstAccess:true,
       profilePic:profilepic
 
-    }, options ).pipe(
-      tap( (data) => {
+    }, options).pipe(
+      tap((data) => {
         console.log("User added to database");
-        console.log(data)
+        console.log(JSON.stringify(data));
       })
     );
 
+  }
+
+  find_user(username:string): Observable<any> {
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/' + username, options).pipe(
+      tap((data:any) => {
+        console.log("ciao");
+      })
+    );
   }
 
   logout() {
     console.log('Logging out');
     this.token = '';
     localStorage.setItem('connect4_token', this.token);
+    this.router.navigate(['/login']);
   }
 
   load_stats(): Observable<any> {
@@ -119,6 +143,7 @@ export class ClientHttpService {
     );
   }
 
+  // DA MODIFICARE
   get_friends():Observable<ParticipantResponse[]> {
 
     // Creating header for the get request
@@ -130,7 +155,7 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get( this.url + '/users/' + this.get_username() + '/stats',  options ).pipe(
+    return this.http.get(this.url + '/users/' + this.get_username() + '/stats', options).pipe(
         map((res: any) => res),
         catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s friend list'))
       )
@@ -170,6 +195,10 @@ export class ClientHttpService {
 
   is_first_access():boolean {
     return (jwt_decode(this.token) as TokenData).firstAccess;
+  }
+
+  not_first_access_anymore(){
+    (jwt_decode(this.token) as TokenData).firstAccess = false;
   }
 
 }

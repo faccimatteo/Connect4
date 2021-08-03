@@ -74,7 +74,7 @@
         <div class="row">
           <div class="col">
             <mat-card *ngIf="differentPassword" class="error">Le due nuove password devono essere uguali</mat-card>
-            <mat-card *ngIf="requestSucceded" class="success">Ti sei registrato correttamente</mat-card>
+            <mat-card *ngIf="duplicateUser" class="error">Il nome utente è già registrato</mat-card>
           </div>
         </div>
       </mat-card-content>
