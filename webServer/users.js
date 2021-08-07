@@ -14,15 +14,16 @@ var userSchema = new mongoose_1.Schema({
     },
     name: {
         type: mongoose.SchemaTypes.String,
-        required: true,
+        required: false
     },
     surname: {
         type: mongoose.SchemaTypes.String,
-        required: true,
+        required: false,
     },
     moderator: {
         type: mongoose.SchemaTypes.Boolean,
-        required: true
+        required: true,
+        default: false
     },
     firstAccess: {
         type: mongoose.SchemaTypes.Boolean,
@@ -30,7 +31,7 @@ var userSchema = new mongoose_1.Schema({
     },
     profilePic: {
         type: mongoose.SchemaTypes.String,
-        required: true,
+        required: false,
     },
     salt: {
         type: mongoose.SchemaTypes.String,
@@ -81,9 +82,7 @@ userSchema.methods.validatePassword = function (pwd) {
     return (this.digest === digest);
 };
 userSchema.methods.hasModeratorRole = function () {
-    if (this.moderator === true)
-        return true;
-    return false;
+    return this.moderator;
 };
 userSchema.methods.setModerator = function () {
     if (!this.hasModeratorRole())

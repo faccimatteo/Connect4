@@ -65,7 +65,7 @@ export class ClientHttpService {
 
         this.token = data.token;
         // Just in case we setted remember the token is setted
-        if( remember){
+        if(remember){
           localStorage.setItem('connect4_token', this.token );
         }
       }));
@@ -111,8 +111,7 @@ export class ClientHttpService {
     };
 
     return this.http.get(this.url + '/users/' + username, options).pipe(
-      tap((data:any) => {
-        console.log("ciao");
+      tap(() => {
       })
     );
   }
@@ -129,16 +128,65 @@ export class ClientHttpService {
     // Creating header for the get request
     const options = {
       headers: new HttpHeaders({
-        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Authorization': 'Bearer ' + this.token,
         'Cache-Control': 'no-cache',
         'Content-Type':  'application/json',
       })
     };
 
     return this.http.get( this.url + '/users/' + this.get_username() + '/stats',  options ).pipe(
-      tap( (data:any) => {
+      tap((data:any) => {
 
         this.stats = JSON.stringify(data);
+      })
+    );
+  }
+
+  // On first acces of a moderator user he has to update his credentials
+  update_user(name:string, surname:string, password:string, profilePic:string){
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.post(this.url + '/users/setModerator/' + this.get_username(),
+    {
+      name:name,
+      surname:surname,
+      password:password,
+      profilePic:profilePic
+    }, options).pipe(
+      tap(() => {
+        console.log('Credentials of moderator ' + this.get_username() + ' has been changed successfully');
+      })
+    );
+  }
+
+  register_moderator(username:string, password:string){
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.post(this.url + '/users/addModerator',
+    {
+      username:username,
+      moderator:true,
+      firstAccess:true,
+      password:password
+    },
+    options).pipe(
+      tap(() => {
+        console.log('Moderator ' + username + ' has been registered successfully');
       })
     );
   }
@@ -172,14 +220,37 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get( this.url + '/users/' + this.get_username() + '/profilepic',  options ).pipe(
+    return this.http.get( this.url + '/users/' + this.get_username() + '/profilepic',  options).pipe(
       map((res: any) => res),
       catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s profile pic'))
     )
   }
 
+  // Function to load on user's first access
+  on_first_login():Observable<any>{
 
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
 
+    return this.http.get( this.url + '/users/' + this.get_username() + '/firstLogin',  options).pipe(
+      tap((response:any) => {
+        // Once I get the response with the token from the API call
+        localStorage.setItem('connect4_token', response.token);
+        console.log('Access to user ' + this.get_username() + " garanted.");
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on user\'s first access.'))
+    )
+  }
+
+  get_token():string{
+    return this.token;
+  }
 
   get_id():string {
     return (jwt_decode(this.token) as TokenData).id;
@@ -197,9 +268,6 @@ export class ClientHttpService {
     return (jwt_decode(this.token) as TokenData).firstAccess;
   }
 
-  not_first_access_anymore(){
-    (jwt_decode(this.token) as TokenData).firstAccess = false;
-  }
 
 }
 

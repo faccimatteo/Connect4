@@ -28,6 +28,8 @@ import { NgChatModule } from 'ng-chat';
 import { ChatComponent } from './chat/chat.component';
 import { FormsModule } from '@angular/forms';
 import { SignupComponent } from './signup/signup.component';
+import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
+import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
 
 
 @NgModule({
@@ -40,6 +42,8 @@ import { SignupComponent } from './signup/signup.component';
     StatsComponent,
     ChatComponent,
     SignupComponent,
+    ResetCredentialsComponent,
+    RegisterModeratorComponent,
   ],
   imports: [
     BrowserModule,

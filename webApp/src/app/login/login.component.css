@@ -62,4 +62,8 @@ mat-card-title{
   color: #673ab7;
 }
 
+.error {
+  background-color: #f44336;
+  color:white;
+}
 

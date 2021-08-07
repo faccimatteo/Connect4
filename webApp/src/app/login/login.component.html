@@ -25,6 +25,11 @@
             </mat-form-field>
           </div>
         </div>
+        <div class="row">
+          <div class="col">
+            <mat-card *ngIf="error_message != ''" class="error">{{error_message}}</mat-card>
+          </div>
+        </div>
         <mat-checkbox #remember_me formControlName="remember_me" labelPosition="after" color="primary">Ricordami</mat-checkbox>
       </mat-card-content>
       <mat-card-actions>

@@ -90,14 +90,14 @@ app.post('/users/addModerator', auth, (req, res, next) => {
     var u = user.newUser(req.body);
     // Inserting a new user inside the system with a temporaray password
     u.setPassword(req.body.password);
-    u.firstAccess = true;
     // Set user as a moderator 
     u.setModerator();
     u.setDefault();
     // Saving the new user on the db 'users'
     u.save().then((data) => {
-        return res.status(200).json({ error: false, errormessage: "", message: "User successfully added with the id below", id: data._id });
+        return res.status(200).json({ error: false, errormessage: "", message: "Moderator successfully added with the id below", id: data._id });
     }).catch((reason) => {
+        // Handle even the case if the user is a duplicate
         return next({ statusCode: 500, error: true, errormessage: reason.code + ': ' + reason.errmsg });
     });
 });
@@ -126,15 +126,54 @@ app.post('/users/addUser', (req, res, next) => {
         return next({ statusCode: 500, error: true, errormessage: reason.code + ': ' + reason.errmsg });
     });
 });
-app.get('/users/:username/profilepic', auth, (req, res) => {
+// Reset credentials of new moderator
+app.post('/users/setModerator/:username', auth, (req, res, next) => {
+    // We reset the password too because the first one was given as a temporary password
+    if (req.body.password == null || req.body.name == null || req.body.surname == null || req.body.profilePic == null) {
+        return next({ statusCode: 404, error: true,
+            errormessage: "Check fields in body request.\n Fields that must be inserted are: name, password, surname and profilePic" });
+    }
+    //getting the use with the username and update the corrispondent fields
+    user.getModel().updateOne({ username: req.params.username }, { $set: { password: req.body.password, name: req.body.name, surname: req.body.surname, profilePic: req.body.profilePic } }).then(() => {
+        return res.status(200).json({ error: false, errormessage: "", message: "User " + req.params.username + " correctly updated" });
+    }).catch((reason) => {
+        return next({ statusCode: 400, error: true, errormessage: reason.code + ': ' + reason.errmsg });
+    });
+});
+app.get('/users/:username/profilepic', auth, (req, res, next) => {
     user.getModel().findOne({ username: req.params.username }, (err, user) => {
         if (err) {
-            console.log(err);
-            res.status(500).send('An error occurred');
+            return next({ statusCode: 404, error: true, errormessage: err });
         }
         else {
             res.status(200).json({ "profilepic": user.profilePic });
         }
+    });
+});
+// Change firstaccess field when a user is logged in for the first time
+app.get('/users/:username/firstLogin', auth, (req, res, next) => {
+    // Checking if the given username exists
+    user.getModel().findOne({ username: req.params.username }).then((username) => {
+        if (username == null)
+            return next({ statusCode: 404, error: true, errormessage: "The user with username " + username.username + " is not present into the DB" });
+        else {
+            user.getModel().updateOne({ _id: username._id }, { $set: { firstAccess: false } }).then(() => {
+                // Setting a new jwt on new login
+                const tokendata = {
+                    id: username._id,
+                    username: username.username,
+                    moderator: username.moderator,
+                    firstAccess: false,
+                };
+                console.log("Login granted. New token has been generated");
+                const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
+                res.status(200).json({ error: false, errormessage: "", message: username.username + " firstaccess correctly updated", token: token_signed });
+            }).catch(() => {
+                return next({ statusCode: 404, error: true, errormessage: "Couldn't update " + username.username + "firstaccess" });
+            });
+        }
+    }).catch((reason) => {
+        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
 // Main route of users/:username
@@ -143,7 +182,7 @@ app.route('/users/:username').get(auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
     user.getModel().findOne({ username: req.params.username }).then((user) => {
         if (user == null)
-            return next({ statusCode: 404, error: true, errormessage: "The user you are looking for is not present into the DB" });
+            return next({ statusCode: 500, error: true, errormessage: "The user you are looking for is not present into the DB" });
         else
             return res.status(200).json(user);
     }).catch((reason) => {
@@ -438,7 +477,7 @@ app.get("/matches/:id/setWinner/:username", auth, (req, res, next) => {
                         match.getModel().updateOne({ _id: myId }, { $set: { winner: req.params.username } }).then(() => {
                             user.getModel().findOne({ username: req.params.username }).select({ win: 1 }).then((result) => {
                                 var updated_wins_number = result.win + 1;
-                                user.getModel().updateOne({ username: req.params.username }, { $set: { updated_wins_number } }).then(() => {
+                                user.getModel().updateOne({ username: req.params.username }, { $set: { win: updated_wins_number } }).then(() => {
                                     return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
                                 });
                             });
@@ -487,7 +526,7 @@ app.get("/matches/:id/setLoser/:username", auth, (req, res, next) => {
                         match.getModel().updateOne({ _id: myId }, { $set: { loser: req.params.username } }).then(() => {
                             user.getModel().findOne({ username: req.params.username }).select({ loss: 1 }).then((result) => {
                                 var updated_loss_number = result.loss + 1;
-                                user.getModel().updateOne({ username: req.params.username }, { $set: { updated_loss_number } }).then(() => {
+                                user.getModel().updateOne({ username: req.params.username }, { $set: { loss: updated_loss_number } }).then(() => {
                                     return res.status(200).json('Loser ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
                                 });
                             });
@@ -541,10 +580,6 @@ passport.use(new passportHTTP.BasicStrategy(function (usersname, password, done)
 // Login endpoint uses passport middleware to check
 // user credentials before generating a new JWT
 app.get("/login", passport.authenticate('basic', { session: false }), (req, res, next) => {
-    // If we reach this point, the user is successfully authenticated and
-    // has been injected into req.user
-    // We now generate a JWT with the useful user data
-    // and return it as response
     const tokendata = {
         id: req.user.id,
         username: req.user.username,
@@ -552,8 +587,7 @@ app.get("/login", passport.authenticate('basic', { session: false }), (req, res,
         firstAccess: req.user.firstAccess,
     };
     console.log("Login granted. Token has been generated");
-    var token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
-    // Note: You can manually check the JWT content at https://jwt.io
+    const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
     return res.status(200).json({ error: false, errormessage: "", token: token_signed });
 });
 // Add error handling middleware

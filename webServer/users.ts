@@ -36,30 +36,31 @@ export interface User extends Document {
 
 // Defining the schema User to map it into MongoDB
 var userSchema = new Schema<User>( {
-    username:   {
+    username: {
         type: mongoose.SchemaTypes.String,
         required: true,
         unique: true
     },
-    name:   {
+    name: {
         type: mongoose.SchemaTypes.String,
-        required: true,
+        required: false
     },
-    surname:    {
+    surname: {
         type: mongoose.SchemaTypes.String,
-        required: true,
+        required: false,
     },
-    moderator:  {
+    moderator: {
         type: mongoose.SchemaTypes.Boolean,
-        required: true 
+        required: true,
+        default: false
     },
-    firstAccess:  {
+    firstAccess: {
         type: mongoose.SchemaTypes.Boolean,
         required: false, 
     },
     profilePic: {
         type: mongoose.SchemaTypes.String,
-        required: true,
+        required: false,
     },
     salt:   {
         type: mongoose.SchemaTypes.String,
@@ -69,15 +70,15 @@ var userSchema = new Schema<User>( {
         type: mongoose.SchemaTypes.String,
         required: false 
     },
-    win:   {
+    win: {
         type: mongoose.SchemaTypes.String,
         required: true 
     },
-    loss:   {
+    loss: {
         type: mongoose.SchemaTypes.String,
         required: true 
     },
-    draw:   {
+    draw: {
         type: mongoose.SchemaTypes.String,
         required: true 
     },
@@ -85,7 +86,7 @@ var userSchema = new Schema<User>( {
         type: [mongoose.SchemaTypes.String],
         required: false 
     },
-    pendingRequests:    {
+    pendingRequests: {
         type: [mongoose.SchemaTypes.String],
         required: false 
     },
@@ -116,10 +117,7 @@ userSchema.methods.validatePassword = function( pwd:string ):boolean {
 }
 
 userSchema.methods.hasModeratorRole = function(): boolean {
-    if( this.moderator === true )
-            return true;
-
-    return false;
+    return this.moderator;
 }
 
 userSchema.methods.setModerator = function() {

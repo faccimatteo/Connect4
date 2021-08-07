@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { NgModule } from '@angular/core';
 import Pusher from 'pusher-js';
 import { ClientHttpService } from '../client-http.service';
 import { MessagesService } from '../messages.service';

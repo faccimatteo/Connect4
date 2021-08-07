@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ClientHttpService } from '../client-http.service';
+import { RoutingService } from '../routing.service';
 
 @Component({
   selector: 'app-home',
@@ -8,20 +9,15 @@ import { ClientHttpService } from '../client-http.service';
 })
 export class HomeComponent implements OnInit {
 
-  constructor(private clientHttp:ClientHttpService) {
+  constructor(private clientHttp:ClientHttpService, private router:RoutingService) {
   }
 
-  ngOnInit(): void {
+  ngOnInit(){
   }
 
-  // Function to detect if a user is remembered
-  is_remembered_user():boolean {
-    // TODO: da far capire come reindirizzare gli utenti registrati
-    if(localStorage.getItem('connect4_token') != null || this.clientHttp.is_first_access()){
-      this.clientHttp.not_first_access_anymore();
-      return true;
-    }else
-      return false;
+  is_allowed():boolean{
+    return localStorage.getItem('connect4_token') != null
   }
+
 
 }

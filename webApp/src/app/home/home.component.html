@@ -1,7 +1,8 @@
-<div *ngIf="is_remembered_user()">
+<div *ngIf="is_allowed()" class='container'>
     <app-bubble-menu></app-bubble-menu>
     <app-chat></app-chat>
 </div>
-<div *ngIf="!is_remembered_user()">
-    <app-login></app-login>
+<div *ngIf="!is_allowed()" class='container'>
+  <app-login></app-login>
 </div>
+

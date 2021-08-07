@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
 import { ClientHttpService } from '../client-http.service';
+import { RoutingService } from '../routing.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -12,7 +12,6 @@ import { ClientHttpService } from '../client-http.service';
 export class SignupComponent implements OnInit {
 
   public duplicateUser = false;
-  public requestSucceded = false;
   public pageTitle = 'Register yourself';
   public differentPassword = false;
   public error_message = undefined;
@@ -29,7 +28,7 @@ export class SignupComponent implements OnInit {
     profilepic: [null, Validators.required],
   });
 
-  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:Router) {}
+  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:RoutingService) {}
 
   ngOnInit() {
   }
@@ -44,11 +43,11 @@ export class SignupComponent implements OnInit {
           this.duplicateUser = true;
         }
       ).add(()=>{
-        // If the
+        // If the user is not present inside the db
         if(!this.duplicateUser)
           this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
-            this.requestSucceded = true;
-            this.router.navigate(['/home']);
+            this.http.on_first_login();
+            this.router.routing();
             // Snackbar di benvenuto
           })
       })
