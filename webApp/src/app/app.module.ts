@@ -30,6 +30,7 @@ import { FormsModule } from '@angular/forms';
 import { SignupComponent } from './signup/signup.component';
 import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
 import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
+import { FriendsListComponent } from './friends-list/friends-list.component';
 
 
 @NgModule({
@@ -44,6 +45,7 @@ import { RegisterModeratorComponent } from './register-moderator/register-modera
     SignupComponent,
     ResetCredentialsComponent,
     RegisterModeratorComponent,
+    FriendsListComponent,
   ],
   imports: [
     BrowserModule,

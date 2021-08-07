@@ -191,8 +191,8 @@ export class ClientHttpService {
     );
   }
 
-  // DA MODIFICARE
-  get_friends():Observable<ParticipantResponse[]> {
+
+  get_friends():Observable<any> {
 
     // Creating header for the get request
     const options = {
@@ -203,9 +203,10 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get(this.url + '/users/' + this.get_username() + '/stats', options).pipe(
+    // Return an array of friends associated at the user
+    return this.http.get(this.url + '/users/' + this.get_username() + '/friends', options).pipe(
         map((res: any) => res),
-        catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s friend list'))
+        catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s friends list'))
       )
   }
 

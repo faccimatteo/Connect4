@@ -167,7 +167,7 @@ app.get('/users/:username/firstLogin', auth, (req, res, next) => {
                 };
                 console.log("Login granted. New token has been generated");
                 const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
-                res.status(200).json({ error: false, errormessage: "", message: username.username + " firstaccess correctly updated", token: token_signed });
+                return res.status(200).json({ error: false, errormessage: "", message: username.username + " firstaccess correctly updated", token: token_signed });
             }).catch(() => {
                 return next({ statusCode: 404, error: true, errormessage: "Couldn't update " + username.username + "firstaccess" });
             });
@@ -227,11 +227,11 @@ app.get('/users/:username/friends', auth, (req, res, next) => {
     // To find user's friends the user that send the request has to be that user
     if (req.user.username != req.params.username)
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user" });
-    user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).then((friends) => {
-        if (friends == null)
+    user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).then((user) => {
+        if (user == null)
             return res.status(200).json("The user you are looking for is not present into the DB");
         else
-            return res.status(200).json(friends);
+            return res.status(200).json(user.friends);
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
