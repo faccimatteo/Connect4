@@ -1,8 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { DataSource } from '@angular/cdk/collections';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatTable, MatTableDataSource } from '@angular/material/table';
+import { Observable } from 'rxjs';
 import { ClientHttpService } from '../client-http.service';
+
+
+interface stats {
+  win:number,
+  loss:number,
+  draw:number
+}
 
 interface User {
   username: string
+  stats: stats
 }
 
 @Component({
@@ -10,34 +21,33 @@ interface User {
   templateUrl: './friends-list.component.html',
   styleUrls: ['./friends-list.component.css']
 })
-export class FriendsListComponent implements OnInit {
+export class FriendsListComponent{
 
-  displayedColumns = ['username'];
-  public dataSource:User[] = [];
-  constructor(private clientHttp: ClientHttpService) {}
+  dataSource:FriendsDataSource;
+  displayedColumns = ['username','win','loss','draw'];
 
-  ngOnInit() {
-     //Code snippet without using StatsDataSource
-      this.clientHttp.get_friends().subscribe(
-      (user_list:string[]) =>
-      {
-        user_list.forEach((user)=>{
-          this.dataSource.push({username:user});
-        })
 
-      })
-      console.log(this.dataSource)
+  constructor(private clientHttp: ClientHttpService) {
+    this.dataSource = new FriendsDataSource(this.clientHttp)
   }
+
+  ngOnInit() {}
 
 }
 
-/*export class StatsDataSource extends DataSource<stats> {
-  constructor(private http: ClientHttpService) {
-    super();
-  }
-  connect(): Observable<stats[]> {
-    return this.http.load_stats();
-  }
-  disconnect() {}
-}*/
+
+class FriendsDataSource extends DataSource<User> {
+
+    constructor(private http: ClientHttpService) {
+      super();
+    }
+
+    connect(): Observable<User[]> {
+      return this.http.get_friends_with_stats();
+    }
+
+    disconnect() {}
+}
+
+
 

@@ -25,7 +25,7 @@ export class StatsComponent implements OnInit {
 
   ngOnInit() {
      //Code snippet without using StatsDataSource
-      this.clientHttp.load_stats().subscribe(
+      this.clientHttp.load_stats(this.clientHttp.get_username()).subscribe(
       (result) =>
       {
         const element:stats[] = [{

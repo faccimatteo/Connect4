@@ -3,7 +3,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { tap, catchError, map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import jwt_decode from "jwt-decode";
-import { ParticipantResponse, User } from 'ng-chat';
 import { Router } from '@angular/router';
 
 interface TokenData {
@@ -17,6 +16,11 @@ interface stats {
   win:number,
   loss:number,
   draw:number
+}
+
+interface User {
+  username: string
+  stats: stats
 }
 
 @Injectable({
@@ -123,7 +127,7 @@ export class ClientHttpService {
     this.router.navigate(['/login']);
   }
 
-  load_stats(): Observable<any> {
+  load_stats(username:string): Observable<any> {
 
     // Creating header for the get request
     const options = {
@@ -134,7 +138,7 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get( this.url + '/users/' + this.get_username() + '/stats',  options ).pipe(
+    return this.http.get( this.url + '/users/' + username + '/stats',  options ).pipe(
       tap((data:any) => {
 
         this.stats = JSON.stringify(data);
@@ -205,9 +209,14 @@ export class ClientHttpService {
 
     // Return an array of friends associated at the user
     return this.http.get(this.url + '/users/' + this.get_username() + '/friends', options).pipe(
-        map((res: any) => res),
-        catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s friends list'))
-      )
+      tap((friends: any) => friends),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s friends list'))
+    )
+  }
+
+  get_friends_with_stats():Observable<User[]> {
+    // Return an observable with all user's friend and their stats
+    return new Observable<User[]>()
   }
 
   get_profile_pic():Observable<any>{
