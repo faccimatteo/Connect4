@@ -309,6 +309,18 @@ app.get('/users/:username/friendsRequests', auth, (req, res, next) => {
         });
     else
         return next({ statusCode: 404, error: true, errormessage: "Couldn't get user from request" });
+    /*user.getModel().findOne({username:req.user.username}).select({pendingRequests:1}).then((userList)=>{
+        (userList.pendingRequests).forEach(friend => {
+          user.getModel().findOne({username:friend}).select({profilePic:1}).then((result)=>{
+            friends[friend] = result.profilePic
+          }).catch(()=>{
+            return next({ statusCode:404, error: true, errormessage: "Couldn't get user profilePic"});
+          })
+        });
+      return res.status(200).json({friendsRequests:friends});
+    }).catch((error)=>{
+      return next({ statusCode:404, error: true, errormessage: "Couldn't retrieve user's friendship requests"});
+    })*/
 });
 // Send friendship request to user 
 app.get('/users/sendFriendship/:username', auth, (req, res, next) => {

@@ -27,19 +27,17 @@
   </mat-card>
   <div *ngFor="let user of users">
     <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          {{user.username}}
+        </mat-card-title>
+        <img mat-card-avatar *ngIf="user.picProfile != null" src="{{user.picProfile}}">
+      </mat-card-header>
       <mat-card-content>
         <div class="row">
-          <div class="col col-lg-7 col-md-7 col-sm-7">
-            {{user.username}}
-          </div>
-          <div class="col col-lg-3 col-md-3 col-sm-3">
-            <img *ngIf="user.picProfile != null" src="{{user.picProfile}}">
-          </div>
-          <div class="col col-lg-2 col-md-2 col-sm-2">
             <mat-card-actions>
               <button mat-raised-button color="primary" (click)="addPlayer(user.username)">Aggiungi</button>
             </mat-card-actions>
-          </div>
         </div>
       </mat-card-content>
     </mat-card>

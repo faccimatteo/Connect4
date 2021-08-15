@@ -1,15 +1,22 @@
 <mat-toolbar color="primary" >
-  <mat-toolbar-row>
     <span routerLink="home" routerLinkActive="active-link">Connect 4</span>
       <span class="example-spacer"></span>
-      <mat-icon>person_add</mat-icon>
-      <mat-menu #friendrequests="matMenu">
-        <button routerLink="friendshipRequests" mat-menu-item>Vedi richieste</button>
-      </mat-menu>
-      <mat-icon *ngIf="this.clientHttp.get_token() != ''" alt="Impostazioni" [matMenuTriggerFor]="menu">person</mat-icon>
-      <mat-menu #menu="matMenu">
-        <button (click)="this.clientHttp.logout()" mat-menu-item>Logout</button>
-      </mat-menu>
-  </mat-toolbar-row>
+        <button mat-icon-button *ngIf="this.clientHttp.get_token() != ''" [matMenuTriggerFor]="friendrequests">
+          <mat-icon>
+            person_add
+          </mat-icon>
+        </button>
+        <mat-menu #friendrequests="matMenu">
+          <button routerLink="friendshipRequests" mat-menu-item>Vedi richieste</button>
+        </mat-menu>
+        <button mat-icon-button *ngIf="this.clientHttp.get_token() != ''" alt="Impostazioni" [matMenuTriggerFor]="menu">
+          <mat-icon>
+            person
+          </mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button (click)="this.clientHttp.logout()" mat-menu-item>Logout</button>
+        </mat-menu>
+
 </mat-toolbar>
   <router-outlet></router-outlet>

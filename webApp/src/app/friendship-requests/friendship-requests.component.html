@@ -1,21 +1,28 @@
-<div *ngFor="let user of this.friendRequests">
-  <mat-card>
+<div id="container">
+  <div *ngFor="let user of this.friendRequests">
+    <mat-card>
+      <mat-card-content>
+        <div class="row">
+          <div class="col col-lg-7 col-md-7 col-sm-7">
+            {{user}}
+          </div>
+          <div class="col col-lg-3 col-md-3 col-sm-3">
+            <mat-card-actions>
+              <button mat-raised-button color="primary" (click)="acceptPlayer(user)">Accetta</button>
+            </mat-card-actions>
+          </div>
+          <div class="col col-lg-2 col-md-2 col-sm-2">
+            <mat-card-actions>
+              <button mat-raised-button color="primary" (click)="rejectPlayer(user)">Rifiuta</button>
+            </mat-card-actions>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  <mat-card *ngIf="this.error != ''">
     <mat-card-content>
-      <div class="row">
-        <div class="col col-lg-7 col-md-7 col-sm-7">
-          {{user}}
-        </div>
-        <div class="col col-lg-3 col-md-3 col-sm-3">
-          <mat-card-actions>
-            <button mat-raised-button color="primary" (click)="acceptPlayer()">Accetta</button>
-          </mat-card-actions>
-        </div>
-        <div class="col col-lg-2 col-md-2 col-sm-2">
-          <mat-card-actions>
-            <button mat-raised-button color="primary" (click)="rejectPlayer()">Rifiuta</button>
-          </mat-card-actions>
-        </div>
-      </div>
+      {{error}}
     </mat-card-content>
   </mat-card>
 </div>

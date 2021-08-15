@@ -200,6 +200,7 @@ app.post('/users/addModerator', auth, (req,res,next) => {
   
 });
 
+// TODO: sistemare il problema closure
 // Endpoint to search user's friend
 app.get('/users/searchForUsers', auth, (req,res,next) => {
   var users = []
@@ -456,6 +457,18 @@ app.get('/users/:username/friendsRequests', auth, (req,res,next) => {
   else
     return next({ statusCode:404, error: true, errormessage: "Couldn't get user from request"}); 
   
+  /*user.getModel().findOne({username:req.user.username}).select({pendingRequests:1}).then((userList)=>{
+      (userList.pendingRequests).forEach(friend => {
+        user.getModel().findOne({username:friend}).select({profilePic:1}).then((result)=>{
+          friends[friend] = result.profilePic
+        }).catch(()=>{
+          return next({ statusCode:404, error: true, errormessage: "Couldn't get user profilePic"}); 
+        })
+      });
+    return res.status(200).json({friendsRequests:friends});
+  }).catch((error)=>{
+    return next({ statusCode:404, error: true, errormessage: "Couldn't retrieve user's friendship requests"}); 
+  })*/
 
 });
 
