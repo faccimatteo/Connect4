@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { ClientHttpService } from './client-http.service';
 
 @Component({
   selector: 'app-root',
@@ -8,4 +9,6 @@ import { Component } from '@angular/core';
 
 export class AppComponent {
   title = 'Connect4';
+
+  constructor(public clientHttp:ClientHttpService){}
 }

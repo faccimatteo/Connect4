@@ -31,7 +31,11 @@ import { SignupComponent } from './signup/signup.component';
 import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
 import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
 import { FriendsListComponent } from './friends-list/friends-list.component';
-
+import { MatMenuModule } from '@angular/material/menu';
+import { SearchFriendsComponent } from './search-friends/search-friends.component';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { FriendshipRequestsComponent } from './friendship-requests/friendship-requests.component';
 
 @NgModule({
   declarations: [
@@ -46,6 +50,8 @@ import { FriendsListComponent } from './friends-list/friends-list.component';
     ResetCredentialsComponent,
     RegisterModeratorComponent,
     FriendsListComponent,
+    SearchFriendsComponent,
+    FriendshipRequestsComponent
   ],
   imports: [
     BrowserModule,
@@ -67,7 +73,10 @@ import { FriendsListComponent } from './friends-list/friends-list.component';
     HttpClientModule,
     MatTableModule,
     NgChatModule,
-    FormsModule
+    FormsModule,
+    MatMenuModule,
+    MatAutocompleteModule,
+    MatSnackBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]

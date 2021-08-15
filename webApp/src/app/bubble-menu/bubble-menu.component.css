@@ -1,0 +1,16 @@
+@media screen and (min-width:641px){
+  #container {
+    margin-top: 2%;
+    margin-left: 35%;
+    margin-right: 35%;
+  }
+
+}
+
+@media screen and (max-width:720px){
+  #container {
+    margin-top: 50%;
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+}

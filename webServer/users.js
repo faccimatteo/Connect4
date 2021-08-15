@@ -115,6 +115,14 @@ userSchema.methods.getFriends = function () {
 userSchema.methods.getPendingRequests = function () {
     return this.pendingRequests;
 };
+userSchema.methods.addFriend = function (user) {
+    if (this.pendingRequests.includes(user.username)) {
+        this.friends.add(user.username);
+        return true;
+    }
+    else
+        return false;
+};
 // Return the schema of the db 'User' in MongoDB
 function getSchema() { return userSchema; }
 exports.getSchema = getSchema;

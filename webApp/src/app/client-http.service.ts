@@ -32,7 +32,7 @@ export class ClientHttpService {
   private token = '';
   public user = '';
   public url = 'http://localhost:8080';
-
+  public friends = []
 
   //Inside the constructor we instantiate the token if present
   constructor(private http:HttpClient, private router:Router) {
@@ -103,6 +103,98 @@ export class ClientHttpService {
 
   }
 
+  get_users():Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/searchForUsers', options).pipe(
+      tap(users => {
+        users
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
+  get_friendship_requests():Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/' + this.get_username() + '/friendsRequests', options).pipe(
+      tap((result) => {
+        result
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
+  send_friendship_request(username:string):Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/sendFriendship/' + username, options).pipe(
+      tap(() => {
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
+  accept_user(username:string):Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/acceptFriendship/' + username, options).pipe(
+      tap(() => {
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
+  reject_user(username:string):Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/rejectFriendship/' + username, options).pipe(
+      tap(() => {
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
   find_user(username:string): Observable<any> {
 
     // Creating header for the get request
@@ -140,7 +232,6 @@ export class ClientHttpService {
 
     return this.http.get( this.url + '/users/' + username + '/stats',  options ).pipe(
       tap((data:any) => {
-
         this.stats = JSON.stringify(data);
       })
     );

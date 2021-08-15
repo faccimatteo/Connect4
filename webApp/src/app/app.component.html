@@ -1,4 +1,15 @@
 <mat-toolbar color="primary" >
-  <span>Connect 4</span>
+  <mat-toolbar-row>
+    <span routerLink="home" routerLinkActive="active-link">Connect 4</span>
+      <span class="example-spacer"></span>
+      <mat-icon>person_add</mat-icon>
+      <mat-menu #friendrequests="matMenu">
+        <button routerLink="friendshipRequests" mat-menu-item>Vedi richieste</button>
+      </mat-menu>
+      <mat-icon *ngIf="this.clientHttp.get_token() != ''" alt="Impostazioni" [matMenuTriggerFor]="menu">person</mat-icon>
+      <mat-menu #menu="matMenu">
+        <button (click)="this.clientHttp.logout()" mat-menu-item>Logout</button>
+      </mat-menu>
+  </mat-toolbar-row>
 </mat-toolbar>
   <router-outlet></router-outlet>

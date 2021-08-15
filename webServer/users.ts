@@ -30,8 +30,8 @@ export interface User extends Document {
     getLoss: ()=>number,
     getDraw: ()=>number,
     getFriends: ()=>string[],
-    getPendingRequests: ()=>string[]
-    
+    getPendingRequests: ()=>string[],
+    addFriend: (user:User)=>boolean
 }
 
 // Defining the schema User to map it into MongoDB
@@ -158,6 +158,16 @@ userSchema.methods.getFriends = function(): string[] {
 
 userSchema.methods.getPendingRequests = function(): string[] {
     return this.pendingRequests;
+}
+
+userSchema.methods.addFriend = function(user:User):boolean {
+    if(this.pendingRequests.includes(user.username)){
+        this.friends.add(user.username);
+        return true;
+    }
+    else
+        return false;
+    
 }
 
 // Return the schema of the db 'User' in MongoDB

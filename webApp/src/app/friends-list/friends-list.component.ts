@@ -1,6 +1,5 @@
 import { DataSource } from '@angular/cdk/collections';
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTable, MatTableDataSource } from '@angular/material/table';
+import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ClientHttpService } from '../client-http.service';
 

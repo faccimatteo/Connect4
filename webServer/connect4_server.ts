@@ -200,6 +200,38 @@ app.post('/users/addModerator', auth, (req,res,next) => {
   
 });
 
+// Endpoint to search user's friend
+app.get('/users/searchForUsers', auth, (req,res,next) => {
+  var users = []
+  if(req.user != null){
+    user.getModel().find({}).then((userList)=>{
+      userList.forEach(user => {
+        users.push({"username":user.username,"picProfile":user.profilePic})
+      });
+
+      users.filter((user, index)=>{
+        if (user == req.user.username){
+          // It delete the element in index pos
+          users.splice(index, 1)
+        }
+      })
+
+      // Looking for friend of that user
+      user.getModel().find({id:req.user.id}).select({friends:1}).then((friendsList)=>{
+        users.filter((user, index)=> {
+          friendsList.forEach((friend)=>{
+            if (user == friend.username)
+              users.splice(index, 1)
+          })
+        })
+        return res.status(200).json({users: users});
+      })
+    })
+  }
+  else
+    return next({statusCode:500, error:true, errormessage: "User is not defined"});
+}) 
+
 app.post('/users/addUser', (req,res,next) => {
   
   // Adding a new user
@@ -353,7 +385,44 @@ app.get('/users/:username/stats', auth, (req,res,next) => {
 
 });
 
+// TODO: DA SISTEMARE
+// Return friends of a certain user
+app.get('/users/:username/friendsWithStats', auth, (req,res,next) => {
+  // To find user's friends the user that send the request has to be that user
+  if(req.user.username != req.params.username)
+      return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user"});
 
+  user.getModel().findOne({username: req.params.username}).select({friends:1}).then((myuser)=>{
+    
+    if(myuser == null)
+      return res.status(200).json("The user you are looking for is not present into the DB"); 
+    else{
+      let friends_with_stats = []
+      function createArray(friends_with_stats){
+        (myuser.friends).forEach(friend => {
+          user.getModel().findOne({username:friend}).select({win:1,loss:1,draw:1}).then((stats)=>{
+              friends_with_stats.push({
+                "username":friend,
+                "stats":{
+                  "win": Number(stats.win),
+                  "loss": Number(stats.loss),
+                  "draw": Number(stats.draw),
+                }
+              })
+            })
+        });
+      }
+      createArray(friends_with_stats)
+      console.log(friends_with_stats)
+      return res.status(200).json({result:'ciao'});
+
+    }
+     
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason}); 
+  })
+
+});
 
 // Return friends of a certain user
 app.get('/users/:username/friends', auth, (req,res,next) => {
@@ -378,17 +447,103 @@ app.get('/users/:username/friendsRequests', auth, (req,res,next) => {
 
   // To find user's friends the user that send the request has to be that user
   if(req.user.username != req.params.username)
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend requests you have to be that user"});
+    return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend requests you have to be that user"});
 
-  user.getModel().findOne({username: req.params.username}).select({pendingRequests:1}).then((requests)=>{
-    return res.status(200).json(requests);
-    
-  }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
-  })
+  if (req.user != null)
+    user.getModel().findOne({username:req.user.username}).select({pendingRequests:1}).then((userList)=>{
+      return res.status(200).json({friendsRequests:userList.pendingRequests});
+    })
+  else
+    return next({ statusCode:404, error: true, errormessage: "Couldn't get user from request"}); 
+  
 
 });
 
+// Send friendship request to user 
+app.get('/users/sendFriendship/:username', auth, (req,res,next) => {
+
+
+  if (req.user != null){
+    // Checking if username to add exists
+    user.getModel().findOne({username:req.params.username}).then(()=>{
+      user.getModel().findOne({username:req.params.username}).select({pendingRequests: 1}).then((result)=>{
+        if ((result.pendingRequests).includes(req.params.user))
+          return next({ statusCode:404, error: true, errormessage: "Friendship request to user " + req.params.username + " has been already sent"})
+        else{
+          user.getModel().updateOne({ username: req.params.username}, {$push: {pendingRequests: req.user.username}}).then(()=>{
+            return res.status(200).json({message: "Friend request sent to " + req.params.username})
+          }).catch((error)=>{
+            return next({ statusCode:error.code, error: true, errormessage: "Couldn't send friend request to user " + req.params.username})
+          })
+        }
+      }).catch((error)=>{
+        return next({ statusCode:404, error: true, errormessage: "Couldn't get user from DB. " + error.code})
+      })
+    })
+  }else
+    return next({ statusCode:404, error: true, errormessage: "Couldn't get user from request"}); 
+  
+})
+
+// Accept friend request of a certain user
+app.get('/users/acceptFriendship/:friend', auth, (req,res,next) => {
+
+  // We check that the friend is inside user's friendRequest list
+  if (req.user != null){
+    user.getModel().findOne({username:req.params.friend}).then((friendUser)=>{
+      user.getModel().findOne({username:req.user.username}).select({pendingRequests:1}).then((friendRequestsList)=>{
+        // We update the friend list of the user 
+        if ((friendRequestsList.pendingRequests).includes(friendUser.username)){
+          user.getModel().findByIdAndUpdate(req.user.id, {$push: {friends: friendUser.username}} ).then(()=>{
+            user.getModel().findByIdAndUpdate(req.user.id, {$pull: {pendingRequests: friendUser.username}}).then(()=>{
+              return res.status(200).json({message: "User " + req.user.username + " added friend " + friendUser.username + " correctly" })
+            }).catch(()=>{
+              return next({ statusCode:404, error: true, errormessage: "Couldn't delete "+ req.params.friend + " from pending requests"}); 
+            })
+          }).catch(()=>{
+            return next({ statusCode:404, error: true, errormessage: 'User ' + friendUser.username + ' is not inside pendingFriendsRequest of user ' + req.user.username}); 
+          })
+        }
+        else
+          return next({ statusCode:404, error: true, errormessage: 'User ' + friendUser.username + ' is not inside pendingFriendsRequest of user ' + req.user.username}); 
+      }).catch(()=>{
+        return next({ statusCode:404, error: true, errormessage: "Error while trying to retrieve "+ req.params.friend + " in pending requests"}); 
+      })
+    }).catch(()=>{
+      return next({ statusCode:404, error: true, errormessage: "Couldn't retrive "+ req.params.friend + " from DB"}); 
+    })
+  }
+  else
+    return next({ statusCode:404, error: true, errormessage: "Couldn't get user from request"}); 
+})
+
+// Accept friend request of a certain user
+app.get('/users/rejectFriendship/:friend', auth, (req,res,next) => {
+
+  // We check that the friend is inside user's friendRequest list
+  if (req.user != null){
+    user.getModel().findOne({username:req.params.friend}).then((friendUser)=>{
+      user.getModel().findOne({username:req.user.username}).select({pendingRequests:1}).then((friendRequestsList)=>{
+        // We update the friend list of the user 
+        if ((friendRequestsList.pendingRequests).includes(friendUser.username)){
+            user.getModel().findByIdAndUpdate(req.user.id, {$pull: {pendingRequests: friendUser.username}}).then(()=>{
+              return res.status(200).json({message: "User " + req.user.username + " added friend " + friendUser.username + " correctly" })
+            }).catch(()=>{
+              return next({ statusCode:404, error: true, errormessage: "Couldn't delete "+ req.params.friend + " from pending requests"}); 
+            })
+        }
+        else
+          return next({ statusCode:404, error: true, errormessage: 'User ' + friendUser.username + ' is not inside pendingFriendsRequest of user ' + req.user.username}); 
+      }).catch(()=>{
+        return next({ statusCode:404, error: true, errormessage: "Error while trying to retrieve "+ req.params.friend + " in pending requests"}); 
+      })
+    }).catch(()=>{
+      return next({ statusCode:404, error: true, errormessage: "Couldn't retrive "+ req.params.friend + " from DB"}); 
+    })
+  }
+  else
+    return next({ statusCode:404, error: true, errormessage: "Couldn't get user from request"}); 
+})
 
 // Main route of matches
 app.route("/matches").get(auth, (req,res,next) => {// Return all matches 
@@ -848,7 +1003,7 @@ app.use( (req,res,next) => {
 
 // Connect to mongodb and launch the HTTP server trough Express
 // by using async promises
-mongoose.connect( 'mongodb://localhost:27017/connect4' , { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect( 'mongodb://localhost:27017/connect4' , { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify:false })
 .then( 
   () => {
 
