@@ -36,6 +36,9 @@ import { SearchFriendsComponent } from './search-friends/search-friends.componen
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { FriendshipRequestsComponent } from './friendship-requests/friendship-requests.component';
+import { ManageUsersComponent } from './manage-users/manage-users.component';
+import { ScrollingModule } from '@angular/cdk/scrolling';
+import { SearchMatchesComponent } from './search-matches/search-matches.component';
 
 @NgModule({
   declarations: [
@@ -51,7 +54,9 @@ import { FriendshipRequestsComponent } from './friendship-requests/friendship-re
     RegisterModeratorComponent,
     FriendsListComponent,
     SearchFriendsComponent,
-    FriendshipRequestsComponent
+    FriendshipRequestsComponent,
+    ManageUsersComponent,
+    SearchMatchesComponent
   ],
   imports: [
     BrowserModule,
@@ -76,7 +81,8 @@ import { FriendshipRequestsComponent } from './friendship-requests/friendship-re
     FormsModule,
     MatMenuModule,
     MatAutocompleteModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    ScrollingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

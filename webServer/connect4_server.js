@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const result = require('dotenv').config();
 if (result.error) {
@@ -101,6 +110,7 @@ app.post('/users/addModerator', auth, (req, res, next) => {
         return next({ statusCode: 500, error: true, errormessage: reason.code + ': ' + reason.errmsg });
     });
 });
+// TODO: sistemare il problema closure
 // Endpoint to search user's friend
 app.get('/users/searchForUsers', auth, (req, res, next) => {
     var users = [];
@@ -124,6 +134,8 @@ app.get('/users/searchForUsers', auth, (req, res, next) => {
                     });
                 });
                 return res.status(200).json({ users: users });
+            }).catch((error) => {
+                return next({ statusCode: error.code, error: true, errormessage: "Couldn't find user's friends" });
             });
         });
     }
@@ -205,6 +217,39 @@ app.get('/users/:username/firstLogin', auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
+// Return all users with stats
+app.get('/users/allUserWithStats', auth, (req, res, next) => {
+    // To find user's friends the user that send the request has to be that user
+    if (!req.user.moderator)
+        return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
+    else {
+        var users_with_stats = [];
+        user.getModel().find({}).then(myusers => {
+            var findAndPushUser = function (user_with_stats, myuser) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    user.getModel().findOne({ username: myuser.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
+                        user_with_stats.push({
+                            "username": myuser.username,
+                            "stats": {
+                                "win": Number(stats.win),
+                                "loss": Number(stats.loss),
+                                "draw": Number(stats.draw),
+                            }
+                        });
+                    }).catch((error) => {
+                        return next({ statusCode: error.code, error: true, errormessage: "Error while trying to get user's stats of user " + req.params.username });
+                    });
+                });
+            };
+            myusers.forEach((myuser) => __awaiter(void 0, void 0, void 0, function* () {
+                yield findAndPushUser(users_with_stats, myuser);
+            }));
+            return res.status(200).json({ result: users_with_stats });
+        }).catch((reason) => {
+            return next({ statusCode: 404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason });
+        });
+    }
+});
 // Main route of users/:username
 app.route('/users/:username').get(auth, (req, res, next) => {
     if (!req.user.moderator)
@@ -237,18 +282,19 @@ app.route('/users/:username').get(auth, (req, res, next) => {
 // Return the stats of a certain user
 app.get('/users/:username/stats', auth, (req, res, next) => {
     user.getModel().findOne({ username: req.params.username }).select({ friends: 1 }).then((friendsList) => {
-        let friends = friendsList.getFriends();
         // Checking if the user is a moderator or the user himself
-        if (!req.user.moderator && (req.params.username != req.user.username) && !friends.includes(req.user.username))
+        if (!req.user.moderator && (req.params.username != req.user.username) && !((friendsList.friends).includes(req.user.username)))
             return next({ statusCode: 404, error: true, errormessage: "Unauthorized: to see this user's statistic you must be that user, a moderator or a friend of that user" });
         user.getModel().findOne({ username: req.params.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
             if (stats == null)
-                return res.status(404).json("The user you are looking for is not present into the DB");
+                return next({ statusCode: 404, error: true, errormessage: "Couldn't load stats of user " + req.params.username });
             else
-                return res.status(200).json(stats);
+                return res.status(200).json({ stats: stats });
         }).catch((reason) => {
             return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
         });
+    }).catch((error) => {
+        return next({ statusCode: error.code, error: true, errormessage: error });
     });
 });
 // TODO: DA SISTEMARE
@@ -655,6 +701,7 @@ app.get("/matches/:id/winner", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
+// TODO: implementare
 // Set the match drawn
 //app.get("/matches/:id/draw", auth, (req,res,next) => {
 // Set the loser of the match

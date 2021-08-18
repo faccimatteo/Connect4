@@ -29,9 +29,9 @@ export class StatsComponent implements OnInit {
       (result) =>
       {
         const element:stats[] = [{
-          win:(result as stats).win,
-          loss:(result as stats).loss,
-          draw:(result as stats).draw
+          win: result.stats.win,
+          loss: result.stats.loss,
+          draw: result.stats.draw,
         }]
         this.dataSource = element;
       })

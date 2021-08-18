@@ -28,7 +28,7 @@ interface User {
 })
 export class ClientHttpService {
 
-  private stats = '';
+  private stats;
   private token = '';
   public user = '';
   public url = 'http://localhost:8080';
@@ -52,8 +52,6 @@ export class ClientHttpService {
   }
 
   login( username: string, password: string, remember: boolean ): Observable<any> {
-
-    console.log('Login: ' + username + ' ' + password );
 
     // Creating header for login request
     const options = {
@@ -122,6 +120,25 @@ export class ClientHttpService {
     );
   }
 
+  delete_friends(username:string):Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.delete(this.url + '/users/' + username, options).pipe(
+      tap(() => {
+
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
   get_friendship_requests():Observable<any>{
 
     // Creating header for the get request
@@ -136,6 +153,24 @@ export class ClientHttpService {
     return this.http.get(this.url + '/users/' + this.get_username() + '/friendsRequests', options).pipe(
       tap((result) => {
         result
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+    );
+  }
+
+  get_users_stats():Observable<any>{
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/users/allUserWithStats', options).pipe(
+      tap(() => {
       }),
       catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
     );
@@ -232,7 +267,11 @@ export class ClientHttpService {
 
     return this.http.get( this.url + '/users/' + username + '/stats',  options ).pipe(
       tap((data:any) => {
-        this.stats = JSON.stringify(data);
+        this.stats =
+        {
+          win:data.stats.win,
+          loss:data.stats.loss,
+          draw:data.stats.draw};
       })
     );
   }

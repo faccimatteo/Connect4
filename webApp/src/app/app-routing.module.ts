@@ -5,6 +5,7 @@ import { FriendsListComponent } from './friends-list/friends-list.component';
 import { FriendshipRequestsComponent } from './friendship-requests/friendship-requests.component';
 import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './login/login.component';
+import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
 import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
@@ -19,6 +20,7 @@ const routes: Routes = [
   { path: 'home/friends', component: FriendsListComponent },
   { path: 'home/searchFriends', component: SearchFriendsComponent },
   { path: 'friendshipRequests', component: FriendshipRequestsComponent },
+  { path: 'manageUsers', component: ManageUsersComponent },
   { path: 'chat', component: ChatComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'login', component: LoginComponent },

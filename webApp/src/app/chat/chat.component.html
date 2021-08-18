@@ -1,9 +1,30 @@
-<div class='container'>
-  <div class="d-flex flex-column align-items-stretch flex-shrink-0 bg-white">
-    <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
+<div id='container'>
+  <mat-card>
+    <mat-card-header color="primary">
+      <mat-card-title >Welcome to the chat, {{username}}!</mat-card-title>
+    </mat-card-header>
+      <cdk-virtual-scroll-viewport itemSize="50" minBufferPx="100000" maxBufferPx="100000" class="viewport">
+        <div *ngFor="let msg of messages" class="item">
+          <div class="d-flex w-100 align-items-center justify-content-between">
+            <strong>{{msg.username}}</strong>
+          </div>
+          {{msg.message}}
+        </div>
+      </cdk-virtual-scroll-viewport>
+    <mat-card-actions>
+      <form (submit)='submit()'>
+        <input class='form-control' placeholder='Scrivi qualcosa..' [value]="message" (change)="message = $event.target.value" />
+      </form>
+    </mat-card-actions>
+  </mat-card>
+</div>
+
+
+
+<!--<div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
       <input class='fs-5 fw-semibold' [(ngModel)]="username"/>
     </div>
-    <div class="list-group list-group-flush border-bottom scrollarea">
+    <div class="list-group list-group-flush border-bottom scrollarea overflow-auto">
       <div class="list-group-item list-group-item-action py-3 lh-tight"
           *ngFor="let msg of messages">
         <div class="d-flex w-100 align-items-center justify-content-between">
@@ -12,12 +33,7 @@
         <div class="col-10 mb-1 small">{{msg.message}}</div>
       </div>
     </div>
-  </div>
-  <form (submit)='submit()'>
-    <input class='form-control' placeholder='write a message' [value]="message" (change)="message = $event.target.value" />
-  </form>
-</div>
-
+  </div>-->
 
 
 

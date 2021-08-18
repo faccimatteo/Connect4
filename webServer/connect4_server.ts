@@ -219,13 +219,16 @@ app.get('/users/searchForUsers', auth, (req,res,next) => {
 
       // Looking for friend of that user
       user.getModel().find({id:req.user.id}).select({friends:1}).then((friendsList)=>{
-        users.filter((user, index)=> {
-          friendsList.forEach((friend)=>{
-            if (user == friend.username)
-              users.splice(index, 1)
-          })
-        })
+          users.filter((user, index)=> {
+            friendsList.forEach((friend)=>{
+              if (user == friend.username)
+                users.splice(index, 1)
+              })
+            })
+
         return res.status(200).json({users: users});
+      }).catch((error) => {
+        return next({statusCode:error.code, error:true, errormessage: "Couldn't find user's friends"});
       })
     })
   }
@@ -328,6 +331,52 @@ app.get('/users/:username/firstLogin', auth, (req,res,next) => {
   })
 })
 
+// Return all users with stats
+app.get('/users/allUserWithStats', auth, (req,res,next) => {
+  
+  // To find user's friends the user that send the request has to be that user
+  if(!req.user.moderator)
+      return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
+  else{
+      var users_with_stats = []
+      user.getModel().find({}).then(
+        myusers => {
+          var findAndPushUser = async function(user_with_stats, myuser){
+      
+              user.getModel().findOne({username:myuser.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
+              
+                user_with_stats.push({
+                  "username":myuser.username,
+                    "stats":{
+                      "win": Number(stats.win),
+                      "loss": Number(stats.loss),
+                      "draw": Number(stats.draw),
+                    }
+                })
+                
+              }).catch((error)=>{
+                return next({ statusCode:error.code, error: true, errormessage: "Error while trying to get user's stats of user " + req.params.username });
+              })
+            
+          };
+             
+          myusers.forEach(
+              async myuser =>{
+                await findAndPushUser(users_with_stats, myuser)
+              }
+          )
+          
+          return res.status(200).json({result:users_with_stats});  
+    
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason}); 
+        })
+  }
+  
+
+});
+
+
 // Main route of users/:username
 app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with a certain username
 
@@ -343,7 +392,7 @@ app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 
-}).delete(auth, (req,res,next)=>{// Delete a user witrh a certain username
+}).delete(auth, (req,res,next)=>{// Delete a user with a certain username
   // I can remove a user only if I am a moderator
   if(!req.user.moderator)
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
@@ -367,21 +416,22 @@ app.get('/users/:username/stats', auth, (req,res,next) => {
 
   user.getModel().findOne({username:req.params.username}).select({friends:1}).then((friendsList) =>{
     
-    let friends = friendsList.getFriends();
 
     // Checking if the user is a moderator or the user himself
-    if(!req.user.moderator && (req.params.username != req.user.username) && !friends.includes(req.user.username))
+    if(!req.user.moderator && (req.params.username != req.user.username) && !((friendsList.friends).includes(req.user.username)))
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see this user's statistic you must be that user, a moderator or a friend of that user"});
 
     user.getModel().findOne({username: req.params.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
-    if(stats == null)
-      return res.status(404).json("The user you are looking for is not present into the DB"); 
-    else
-      return res.status(200).json(stats);
+      if(stats == null)
+        return next({ statusCode:404, error: true, errormessage: "Couldn't load stats of user " + req.params.username});
+      else
+        return res.status(200).json({stats:stats});
 
     }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+      return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
     })
+  }).catch((error)=>{
+    return next({ statusCode:error.code, error: true, errormessage: error}); 
   })
 
 });
@@ -877,7 +927,7 @@ app.get("/matches/:id/winner", auth, (req,res,next) => {
   })
 });
 
-
+// TODO: implementare
 // Set the match drawn
 //app.get("/matches/:id/draw", auth, (req,res,next) => {
 
