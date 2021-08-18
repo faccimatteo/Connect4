@@ -3,7 +3,7 @@
     <mat-card-header color="primary">
       <mat-card-title >Welcome to the chat, {{username}}!</mat-card-title>
     </mat-card-header>
-      <cdk-virtual-scroll-viewport itemSize="50" minBufferPx="100000" maxBufferPx="100000" class="viewport">
+      <cdk-virtual-scroll-viewport itemSize="50" class="viewport">
         <div *ngFor="let msg of messages" class="item">
           <div class="d-flex w-100 align-items-center justify-content-between">
             <strong>{{msg.username}}</strong>

@@ -32,7 +32,6 @@ export class ChatComponent implements OnInit {
     var channel = pusher.subscribe('chat');
     channel.bind('message', data =>
       {this.messages.push(data);
-        console.log('into oninit', this.messages.length)
         this.viewPort.scrollToIndex((this.messages.length), 'smooth');
 
       }
@@ -45,7 +44,6 @@ export class ChatComponent implements OnInit {
     .subscribe(
       ()=>{
         this.message = '';
-        console.log('into submit', this.messages.length)
       })
 
   }

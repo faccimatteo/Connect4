@@ -12,4 +12,9 @@ export class SearchMatchesComponent implements OnInit {
   ngOnInit(): void {
   }
 
+  searchMatch(){
+    // If another user is looking for a match it starts a match
+
+  }
+
 }
