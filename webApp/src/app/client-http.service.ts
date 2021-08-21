@@ -150,7 +150,7 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get(this.url + '/users/setLookingForAMatch' + value, options).pipe(
+    return this.http.get(this.url + '/users/setLookingForAMatch/' + value, options).pipe(
       tap(()=> {
 
       }),
@@ -158,7 +158,7 @@ export class ClientHttpService {
     );
   }
 
-  pariForAMatch():Observable<any>{
+  pairForAMatch():Observable<any>{
 
     // Creating header for the get request
     const options = {
@@ -407,7 +407,7 @@ export class ClientHttpService {
     return new Observable<User[]>()
   }
 
-  get_profile_pic():Observable<any>{
+  get_profile_pic(username:string):Observable<any>{
 
     // Creating header for the get request
     const options = {
@@ -418,7 +418,7 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get( this.url + '/users/' + this.get_username() + '/profilepic',  options).pipe(
+    return this.http.get( this.url + '/users/' + username + '/profilepic',  options).pipe(
       map((res: any) => res),
       catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s profile pic'))
     )

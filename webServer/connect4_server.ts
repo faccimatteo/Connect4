@@ -289,14 +289,15 @@ app.post('/users/setModerator/:username', auth, (req,res,next) => {
 });
 
 app.get('/users/:username/profilepic', auth, (req, res, next) => {
-  user.getModel().findOne({username:req.params.username}, (err, user) => {
-      if (err) {
-        return next({ statusCode:404, error: true, errormessage: err});
-      }
-      else {
-          res.status(200).json({"profilepic": user.profilePic});
-      }
-  });
+  user.getModel().findOne({username:req.params.username}).then((user) => {
+      if (user == null) 
+        return next({ statusCode:404, error: true, errormessage: "User " + req.params.username + " not found in DB."});
+      else 
+        return res.status(200).json({"profilepic": user.profilePic});
+      
+  }).catch((error) => {
+    return next({ statusCode:error.code, error: true, errormessage: "Couldn't get user from DB. " + error.code});
+  })
 });
 
 // Change firstaccess field when a user is logged in for the first time
@@ -402,7 +403,7 @@ app.get('/users/pairUserForAMatch', auth, (req,res,next) => {
         const index = Math.floor(Math.random() * waitingUsers.length)
         return res.status(200).json({user:response[index]});
       }else{
-        return next({statusCode:404, error: true, errormessage: "Cannot get users with isLookingForAMatch on true", user:null});
+        return res.status(200).json({user:null});
       }
     }).catch((error)=>{
       return next({statusCode:error.code, error: true, errormessage: "Cannot get isLookingForAMatch from users from DB"});
@@ -481,7 +482,8 @@ app.get('/users/setLookingForAMatch/:value', auth, (req,res,next) => {
       if(response == null)
         return next({statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"});
       else{
-        user.getModel().updateOne({username:req.user.username}, {$set: {isLookingForAMatch: Boolean(req.params.value)}}).then(()=>{
+        const valueToUpdate = (req.params.value =="true")
+        user.getModel().updateOne({username:req.user.username}, {$set: {isLookingForAMatch: valueToUpdate}}).then(()=>{
           return res.status(200).json({message: "User state of looking for a match setted: " + req.params.value});
         }).catch((error)=>{
           return next({statusCode:error.code, error: true, errormessage: "Cannot update isLookingForAMatch: " + error});

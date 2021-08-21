@@ -38,12 +38,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { FriendshipRequestsComponent } from './friendship-requests/friendship-requests.component';
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { ScrollingModule } from '@angular/cdk/scrolling';
-import { SearchMatchesComponent } from './search-matches/search-matches.component';
-import { MatGridListModule } from '@angular/material/grid-list';
-import { NgxsLoggerPluginModule } from '@ngxs/logger-plugin';
-import { NgxsModule } from '@ngxs/store';
-import { environment } from 'src/environments/environment';
-import { NgxsReduxDevtoolsPluginModule } from '@ngxs/devtools-plugin';
+import { DialogDataExampleDialog, SearchMatchesComponent } from './search-matches/search-matches.component';
 import { MatchModule } from './match/match.module';
 
 
@@ -64,7 +59,7 @@ import { MatchModule } from './match/match.module';
     FriendshipRequestsComponent,
     ManageUsersComponent,
     SearchMatchesComponent,
-
+    DialogDataExampleDialog
   ],
   imports: [
     BrowserModule,
