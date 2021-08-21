@@ -19,6 +19,7 @@ export interface User extends Document {
     draw: number,
     friends: string[],  //all the friends realated with the user  
     pendingRequests: string[],  //all of user's friends request  (can be visible only to the user himself/herself)
+    isLookingForAMatch: boolean,
     setPassword: (pwd:string)=>void,
     validatePassword: (pwd:string)=>boolean,
     hasModeratorRole: ()=>boolean,
@@ -89,6 +90,11 @@ var userSchema = new Schema<User>( {
     pendingRequests: {
         type: [mongoose.SchemaTypes.String],
         required: false 
+    },
+    isLookingForAMatch: {
+        type: mongoose.SchemaTypes.Boolean,
+        required: true,
+        default: false 
     },
 })
 

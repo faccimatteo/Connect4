@@ -8,13 +8,13 @@ import { AppSettingsService } from './shared/services/appSettings/app-service.se
 import { ThemingService } from './shared/services/theming/theming.service';
 
 @Component({
-    selector: 'app-root',
-    templateUrl: './app.component.html',
-    styleUrls: ['./app.component.scss']
+    selector: 'app-match',
+    templateUrl: './match.component.html',
+    styleUrls: ['./match.component.scss']
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class MatchComponent implements OnInit, OnDestroy {
     title = 'connect4-angular';
-    themingSubscription: Subscription;
+    themingSubscription!: Subscription;
     constructor(
         private store: Store,
         private themingService: ThemingService,
@@ -22,12 +22,11 @@ export class AppComponent implements OnInit, OnDestroy {
         private connect4Service: Connect4Service,
         private audioService: AudioService
     ) {}
-    @HostBinding('class') public cssClass: string;
+    @HostBinding('class') public cssClass!: string;
 
     ngOnInit(): void {
         this.themingSubscription = this.themingService.themeBS.subscribe((theme: string) => {
             this.cssClass = theme;
-            //this.appSettingsService.setDarkMode(theme === 'dark-theme');
         });
         this.connect4Service.diskAddedSubject.subscribe(() => {
             const gameFinishInfo = this.connect4Service.checkGameFinished();

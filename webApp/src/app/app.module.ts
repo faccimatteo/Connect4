@@ -39,6 +39,13 @@ import { FriendshipRequestsComponent } from './friendship-requests/friendship-re
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { SearchMatchesComponent } from './search-matches/search-matches.component';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { NgxsLoggerPluginModule } from '@ngxs/logger-plugin';
+import { NgxsModule } from '@ngxs/store';
+import { environment } from 'src/environments/environment';
+import { NgxsReduxDevtoolsPluginModule } from '@ngxs/devtools-plugin';
+import { MatchModule } from './match/match.module';
+
 
 @NgModule({
   declarations: [
@@ -56,7 +63,8 @@ import { SearchMatchesComponent } from './search-matches/search-matches.componen
     SearchFriendsComponent,
     FriendshipRequestsComponent,
     ManageUsersComponent,
-    SearchMatchesComponent
+    SearchMatchesComponent,
+
   ],
   imports: [
     BrowserModule,
@@ -82,6 +90,7 @@ import { SearchMatchesComponent } from './search-matches/search-matches.componen
     MatMenuModule,
     MatAutocompleteModule,
     MatSnackBarModule,
+    MatchModule,
     ScrollingModule
   ],
   providers: [],

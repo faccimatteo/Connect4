@@ -50,7 +50,7 @@ export const gameoverStateMock = {
         gameOver: true
     },
     appSettings: {
-        darkModeEnabled: true,
+        darkModeEnabled: false,
         soundMute: false
     }
 };

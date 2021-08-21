@@ -14,9 +14,9 @@ import { ThemingService } from './../../../../shared/services/theming/theming.se
     styleUrls: ['./sidenav.component.scss']
 })
 export class SidenavComponent implements OnInit {
-    @ViewChild('sidenav', { static: true }) public sidenav: MatSidenav;
-    @Select((state: AppState) => state.appSettings.soundMute) isSoundMuted$: Observable<boolean>;
-    @Select((state: AppState) => state.appSettings.darkModeEnabled) isDarkMode$: Observable<boolean>;
+    @ViewChild('sidenav', { static: true }) public sidenav!: MatSidenav;
+    @Select((state: AppState) => state.appSettings.soundMute) isSoundMuted$!: Observable<boolean>;
+    @Select((state: AppState) => state.appSettings.darkModeEnabled) isDarkMode$!: Observable<boolean>;
 
     showSoundMenu = false;
     showThemeMenu = false;

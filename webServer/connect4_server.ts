@@ -376,6 +376,42 @@ app.get('/users/allUserWithStats', auth, (req,res,next) => {
 
 });
 
+// Return if the user is looking for a match
+app.get('/users/getLookingForAMatch', auth, (req,res,next) => {
+  
+  // Checking if the user is a moderator or the user himself or one of his friends
+  if(req.user != null){
+    user.getModel().findOne({username:req.user.username}).select({}).then((response)=>{
+      return res.status(200).json({lookingForAMatch:response.isLookingForAMatch});
+    }).catch((error)=>{
+      return next({statusCode:error.code, error: true, errormessage: "Cannot retrieve user " + req.user.username + " from DB."});
+    })
+  }else{
+    return next({statusCode:404, error: true, errormessage: "Cannot access this endpoint"});
+  }
+    
+})
+
+app.get('/users/pairUserForAMatch', auth, (req,res,next) => {
+
+  // Search a user to match with if possible 
+  if (req.user != null){
+    user.getModel().find().select({}).where('isLookingForAMatch').equals(true).where('username').ne(req.user.username).then((response)=>{
+      if (response.length != 0){
+        const waitingUsers = response
+        const index = Math.floor(Math.random() * waitingUsers.length)
+        return res.status(200).json({user:response[index]});
+      }else{
+        return next({statusCode:404, error: true, errormessage: "Cannot get users with isLookingForAMatch on true", user:null});
+      }
+    }).catch((error)=>{
+      return next({statusCode:error.code, error: true, errormessage: "Cannot get isLookingForAMatch from users from DB"});
+    })
+  }else{
+    return next({statusCode:404, error: true, errormessage: "Cannot access this endpoint"});
+  }
+})
+
 
 // Main route of users/:username
 app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with a certain username
@@ -417,7 +453,7 @@ app.get('/users/:username/stats', auth, (req,res,next) => {
   user.getModel().findOne({username:req.params.username}).select({friends:1}).then((friendsList) =>{
     
 
-    // Checking if the user is a moderator or the user himself
+    // Checking if the user is a moderator or the user himself or one of his friends
     if(!req.user.moderator && (req.params.username != req.user.username) && !((friendsList.friends).includes(req.user.username)))
       return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see this user's statistic you must be that user, a moderator or a friend of that user"});
 
@@ -435,6 +471,31 @@ app.get('/users/:username/stats', auth, (req,res,next) => {
   })
 
 });
+
+// Set if user is looking for a match
+app.get('/users/setLookingForAMatch/:value', auth, (req,res,next) => {
+  
+  // Checking if the user is a moderator or the user himself or one of his friends
+  if(req.user != null){
+    user.getModel().findOne({username:req.user.username}).select({}).then((response)=>{
+      if(response == null)
+        return next({statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"});
+      else{
+        user.getModel().updateOne({username:req.user.username}, {$set: {isLookingForAMatch: Boolean(req.params.value)}}).then(()=>{
+          return res.status(200).json({message: "User state of looking for a match setted: " + req.params.value});
+        }).catch((error)=>{
+          return next({statusCode:error.code, error: true, errormessage: "Cannot update isLookingForAMatch: " + error});
+        }) 
+      }
+    }).catch((error)=>{
+      return next({ statusCode:error.code, error: true, errormessage: "Cannot retrieve isLookingForAMatch for user " + req.user.username});
+    })
+  }else{
+    return next({statusCode:404, error: true, errormessage: "Cannot access this endpoint"});
+  }
+    
+})
+
 
 // TODO: DA SISTEMARE
 // Return friends of a certain user

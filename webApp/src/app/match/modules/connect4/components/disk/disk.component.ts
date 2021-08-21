@@ -3,7 +3,7 @@ import { Store } from '@ngxs/store';
 
 import { AppState } from './../../../../ngxs';
 import { PlayerIndex } from './../../../../ngxs/state/connect4.state';
-import { AudioService } from './../../../../shared/services/audio/audio.service';
+//import { AudioService } from './../../../../shared/services/audio/audio.service';
 import { Connect4Service } from './../../connect4.service';
 
 @Component({
@@ -12,10 +12,10 @@ import { Connect4Service } from './../../connect4.service';
     styleUrls: ['./disk.component.scss']
 })
 export class DiskComponent implements OnInit {
-    @Input() index: number;
-    filledBy: PlayerIndex | null;
-    isMatchingWinCondition: boolean;
-    constructor(private connect4Service: Connect4Service, private audioService: AudioService, private store: Store) {}
+    @Input() index!: number;
+    filledBy!: PlayerIndex | null;
+    isMatchingWinCondition!: boolean;
+    constructor(private connect4Service: Connect4Service, /*private audioService: AudioService,*/ private store: Store) {}
 
     ngOnInit(): void {
         this.resetDiskState();
@@ -40,7 +40,7 @@ export class DiskComponent implements OnInit {
     private checkIfConcerned(slotFilled: number, playerIndex: PlayerIndex): void {
         if (this.index === slotFilled) {
             this.filledBy = playerIndex;
-            this.audioService.playAudio('diskAdded', 220);
+            //this.audioService.playAudio('diskAdded', 220);
         }
     }
 

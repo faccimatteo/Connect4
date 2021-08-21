@@ -6,6 +6,7 @@ import { FriendshipRequestsComponent } from './friendship-requests/friendship-re
 import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './login/login.component';
 import { ManageUsersComponent } from './manage-users/manage-users.component';
+import { MatchComponent } from './match/match.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
 import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
@@ -22,6 +23,7 @@ const routes: Routes = [
   { path: 'friendshipRequests', component: FriendshipRequestsComponent },
   { path: 'manageUsers', component: ManageUsersComponent },
   { path: 'chat', component: ChatComponent },
+  { path: 'match', component: MatchComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'login', component: LoginComponent },
   { path: 'reset', component: ResetCredentialsComponent },

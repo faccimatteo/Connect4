@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Select } from '@ngxs/store';
 import { Observable } from 'rxjs';
-import { SupportedBreakpoints } from 'src/app/shared/services/breakpoint/breakpoint.service';
+import { SupportedBreakpoints } from './../../../../shared/services/breakpoint/breakpoint.service';
 
 import { AppState } from './../../../../ngxs';
 import { AppSettingsService } from './../../../../shared/services/appSettings/app-service.service';
@@ -15,18 +15,18 @@ import { ThemingService } from './../../../../shared/services/theming/theming.se
     styleUrls: ['./toolbar.component.scss']
 })
 export class ToolbarComponent implements OnInit {
-    themes: string[];
-    breakpoint: SupportedBreakpoints;
+    themes!: string[];
+    breakpoint!: SupportedBreakpoints;
     label = {
         changeTheme: $localize`:@@toolbar.changeTheme:Change theme`,
         muteSound: $localize`:@@toolbar.muteSound:Mute sound`,
         unmuteSound: $localize`:@@toolbar.unmuteSound:Unmute sound`,
         changeLanguage: $localize`:@@toolbar.changeLanguage:Change language`
     };
-    @Select((state: AppState) => state.appSettings.soundMute) isSoundMuted$: Observable<boolean>;
+    @Select((state: AppState) => state.appSettings.soundMute) isSoundMuted$!: Observable<boolean>;
     constructor(
         private theming: ThemingService,
-        private sidenavService: SidenavService,
+        //private sidenavService: SidenavService,
         private appSettingsService: AppSettingsService,
         private breakpointService: BreakpointService
     ) {}
@@ -51,6 +51,6 @@ export class ToolbarComponent implements OnInit {
     }
 
     public toggleSidenav(): void {
-        this.sidenavService.toggle();
+        //this.sidenavService.toggle();
     }
 }

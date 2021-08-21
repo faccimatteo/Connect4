@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
+import { ClientHttpService } from 'src/app/client-http.service';
 
 import { AppState } from './../../../../ngxs';
 import { PlayerIndex } from './../../../../ngxs/state/connect4.state';
@@ -12,20 +13,20 @@ import { Connect4Service } from './../../connect4.service';
 })
 export class BannerInfoComponent implements OnInit {
     translations = {
-        player1: $localize`:@@notificationInfo.player1:Player 1`,
-        player2: $localize`:@@notificationInfo.player2:Player 2`,
+        player1: $localize`:@@notificationInfo.player1:Mario`,
+        player2: $localize`:@@notificationInfo.player2:Paolo`,
         yourTurn: $localize`:@@notificationInfo.yourTurn:your turn !`,
         wins: $localize`:@@notificationInfo.wins:wins !`,
         noWinner: $localize`:@@notificationInfo.noWinner:No winner !`,
         gameOver: $localize`:@@notificationInfo.gameOver:Game over.`,
         draw: $localize`:@@notificationInfo.gameOver:Draw.`
     };
-    playerNameLabel: string | null;
-    playerStatusLabel: string | null;
-    gameOverLabel: string | null;
-    playingPlayerIndex: PlayerIndex | null;
-    isGameOver: boolean;
-    constructor(private store: Store, private connect4Service: Connect4Service) {}
+    playerNameLabel!: string | null;
+    playerStatusLabel!: string | null;
+    gameOverLabel!: string | null;
+    playingPlayerIndex!: PlayerIndex | null;
+    isGameOver!: boolean;
+    constructor(private store: Store, private connect4Service: Connect4Service, private clientHttp:ClientHttpService) {}
 
     ngOnInit(): void {
         this.connect4Service.diskAddedSubject.subscribe(({ byPlayerIndex }) => {

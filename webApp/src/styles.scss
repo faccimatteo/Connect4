@@ -13,12 +13,12 @@ $player2DiskColor: lightcoral;
 ************************/
 
 // Custom themable components
-@import './app/modules/connect4/components/board/board.component';
-@import './app/modules/connect4/components/banner-info/banner-info.component';
-@import './app/modules/connect4/components/disk/disk.component';
-@import './app/modules/header/components/toolbar/toolbar.component';
-@import './app/modules/sidenav/components/sidenav/sidenav.component';
-@import './app/modules/footer/components/signature/signature.component';
+@import './app/match/modules/connect4/components/board/board.component';
+@import './app/match/modules/connect4/components/banner-info/banner-info.component';
+@import './app/match/modules/connect4/components/disk/disk.component';
+@import './app/match/modules/header/components/toolbar/toolbar.component';
+@import './app/match/modules/sidenav/components/sidenav/sidenav.component';
+@import './app/match/modules/footer/components/signature/signature.component';
 @mixin custom-components-theme($theme) {
     @include board-theme($theme);
     @include disk-theme($theme);

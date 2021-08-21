@@ -15,8 +15,8 @@ export class HomeComponent implements OnInit {
   ngOnInit(){
   }
 
-  is_allowed():boolean{
-    return localStorage.getItem('connect4_token') != null
+  is_allowed(){
+    return localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ""
   }
 
 

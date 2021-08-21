@@ -61,6 +61,11 @@ var userSchema = new mongoose_1.Schema({
         type: [mongoose.SchemaTypes.String],
         required: false
     },
+    isLookingForAMatch: {
+        type: mongoose.SchemaTypes.Boolean,
+        required: true,
+        default: false
+    },
 });
 userSchema.methods.setPassword = function (pwd) {
     // We use a random 16-bytes hex string for salt

@@ -4,7 +4,6 @@ import { Store } from '@ngxs/store';
 import { AppState } from './../../../../ngxs';
 import { PlayerIndex } from './../../../../ngxs/state/connect4.state';
 import { connect4 } from './../../../../settings';
-import { AudioService } from './../../../../shared/services/audio/audio.service';
 import { BreakpointService } from './../../../../shared/services/breakpoint/breakpoint.service';
 import { Connect4Service } from './../../connect4.service';
 
@@ -16,13 +15,12 @@ import { Connect4Service } from './../../connect4.service';
 export class BoardComponent implements OnInit {
     nbColumn = connect4.nbColumns;
     nbRow = connect4.nbRows;
-    rowHeight: string;
-    i18nTest: string;
-    isGameOver: boolean;
+    rowHeight!: string;
+    i18nTest!: string;
+    isGameOver!: boolean;
     constructor(
         private store: Store,
         private connect4Service: Connect4Service,
-        private audioService: AudioService,
         private breakpointService: BreakpointService
     ) {}
 
@@ -51,8 +49,6 @@ export class BoardComponent implements OnInit {
         }));
         if (!isGameOver) {
             this.connect4Service.addDiskInColumn(columnIndex, playerIndex);
-        } else {
-            this.audioService.playAudio('error');
         }
     }
 }
