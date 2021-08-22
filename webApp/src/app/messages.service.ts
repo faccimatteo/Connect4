@@ -4,11 +4,6 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ClientHttpService } from './client-http.service';
 
-interface Message {
-  username: string,
-  message: string
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -25,11 +20,14 @@ export class MessagesService {
 
   constructor(private http:HttpClient, private clientHttp:ClientHttpService) { }
 
-  send_message( username:string, message:string ):Observable<any>{
+  send_message_to_global(message:string):Observable<any>{
 
     return this.http.post(this.clientHttp.url + '/messages',{
-      username: username,
-      message: message
+      message: message,
+      type: "global"
     }, this.options)
   }
+
+  // Implements all the others possibile chats
+
 }

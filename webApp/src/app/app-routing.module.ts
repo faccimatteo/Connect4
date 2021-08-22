@@ -23,7 +23,7 @@ const routes: Routes = [
   { path: 'friendshipRequests', component: FriendshipRequestsComponent },
   { path: 'manageUsers', component: ManageUsersComponent },
   { path: 'chat', component: ChatComponent },
-  { path: 'match', component: MatchComponent },
+  { path: 'match/:id', component: MatchComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'login', component: LoginComponent },
   { path: 'reset', component: ResetCredentialsComponent },

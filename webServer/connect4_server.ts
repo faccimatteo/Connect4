@@ -38,6 +38,7 @@ import jwt = require('express-jwt');            // JWT parsing middleware for ex
 import cors = require('cors');                  // Enable CORS middleware
 import io = require('socket.io');               // Socket.io websocket library
 import { Readable } from 'stream';
+import { stringify } from 'querystring';
 
 declare global {
   namespace Express {
@@ -680,19 +681,11 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 }).post(auth, (req,res,next) => {// Inserting a new match 
-  
-  if(!req.user.moderator)
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
    
   // We insert a new match from the data included in the body
   // after checking if all the required fields are present
-
-  if(req.body.player1 == null || req.body.player2 == null || req.body.spectators == null || req.body.winner == null)
-    return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, spectators, winner"});
-
-  // Checking for fields correction 
-  if((req.body.winner != "" && req.body.winner != req.body.player1) || (req.body.winner != "" && req.body.winner != req.body.player1))
-    return next({ statusCode:404, error: true, errormessage: "The winner's name must be the same of the one of the two players"});
+  if(req.body.player1 == null || req.body.player2 == null )
+    return next({ statusCode:404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2"});
 
   // Checking if players are inserted into a DB
   user.getModel().findOne({username:req.body.player1}).then((result)=>{
@@ -703,27 +696,60 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
         if(result == null)
           return next({statusCode:404, error: true, errormessage: "The user you are trying to insert is not present into the db."});
         else{
+          // Checking spectators field
+          if(req.body.spectators != null){
+            if(req.body.spectators[0].length == req.body.spectators[1].length){
+              (req.body.spectators[0]).forEach(element => {
+                if(typeof element != "string"){
+                  return next({statusCode:404, error: true, errormessage: "Spectators field not correctly formatted: must be [string[], boolean[]]"});  
+                }else 
+                  user.getModel().findOne({username:element}).then((result)=>{
+                    if(result == null)
+                      return next({statusCode:404, error: true, errormessage: "Spectators field must contain an existent user"});
+                  })  
+              });
+              (req.body.spectators[1]).forEach(element => {
+                if(typeof element != "boolean")
+                  return next({statusCode:404, error: true, errormessage: "Spectators field not correctly formatted: must be [string[], boolean[]]"});
+              });
+
+            }
+          }
           // The users are checked, now we can correctly insert the match
-          var endedValue;
-
-          if(req.body.winner != undefined)
-            endedValue = true;
-          else
-            endedValue = false;
-
-          match.getModel().create({
-            player1: req.body.player1,
-            player2: req.body.player2,
-            spectators: req.body.spectators,
-            winner: req.body.winner,
-            ended: endedValue
+          const players = [req.body.player1, req.body.player2];
           
-          }).then(()=>{
-            return res.status(200).json('New match correctly added');
-          }).catch((reason)=>{
-            return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-          });
-          
+          if(req.body.winner != null){
+            if(players.includes(req.body.winner)){
+            
+              match.getModel().create({
+                player1: req.body.player1,
+                player2: req.body.player2,
+                spectators: req.body.spectators,
+                winner: req.body.winner,
+                ended: true
+              
+              }).then((matchCreated)=>{
+                return res.status(200).json({message:'New ended match correctly added', id: matchCreated._id});
+              }).catch((reason)=>{
+                return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+              });
+            }else{
+              return next({ statusCode:404, error: true, errormessage: "winner field must be one of the two players"});
+            }
+            
+          }else{
+            match.getModel().create({
+              player1: req.body.player1,
+              player2: req.body.player2,
+              spectators: [],
+              winner: undefined,
+              ended: false
+            }).then((matchCreated)=>{
+              return res.status(200).json({message:'New match correctly added', id: matchCreated._id});
+            }).catch((reason)=>{
+              return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+            });
+          }
         }
       }).catch((reason)=>{
         return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
@@ -1050,11 +1076,46 @@ app.get("/matches/:id/loser", auth, (req,res,next) => {
 
 // Pusher chat API
 app.post("/messages", auth, (req,res,next) => {
-  pusher.trigger("chat", "message", {
-    username: req.body.username,
-    message: req.body.message
-  });
-  res.json([]);
+  if(req.body.message == null || req.body.type == null){
+    return next({ statusCode:404, error: true, errormessage: "Body must contain message and type fields"});
+  }else{
+
+    pusher.trigger("chat" + req.body.type, "message", {
+      username: req.user.username,
+      message: req.body.message
+    });
+    return res.status(200).json({username:req.user.username, message:req.body.message});
+  }
+  
+})
+
+// Pusher finding match API
+app.post("/matchFound", auth, (req,res,next) => {
+  if(req.body.matchId == null || req.body.username == null)
+    return next({ statusCode:404, error: true, errormessage: "Body must contain username and matchId fields"});
+  else{
+    match.getModel().findById(req.body.matchId,(err) => {
+      if(err != null)
+        return next({statusCode:err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB."});
+      else{
+        user.getModel().findOne({username:req.body.username}).then((response) => {
+          if(response == null){
+            return next({ statusCode:404, error: true, errormessage: "Username " + req.body.username + " has not found into the DB."});
+          }else{
+            pusher.trigger("lookingForAMatch", "matchFound", {
+              username: req.body.username,
+              matchId: req.body.matchId
+            });
+            return res.status(200).json({message:"match found", against:req.body.username});
+          }
+        })
+      }
+    })
+
+    
+  }
+  
+  
 })
 
 

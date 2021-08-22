@@ -14,33 +14,33 @@ import { ViewChild } from '@angular/core';
 export class ChatComponent implements OnInit {
 
   @ViewChild(CdkVirtualScrollViewport) viewPort: CdkVirtualScrollViewport;
-  username = ''
+  username = '';
   messages = [];
   message = '';
+  private pusher;
 
   constructor(private messagesService:MessagesService, private clientHttp:ClientHttpService) {
     this.username = clientHttp.get_username()
+    // Using Pusher for real time chat
+    this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
+      cluster: 'eu'
+    });
    }
 
   ngOnInit(): void {
 
-    // Using Pusher for real time chat
-    var pusher = new Pusher('2eb653c8780c9ebbe91e', {
-      cluster: 'eu'
-    });
-
-    var channel = pusher.subscribe('chat');
-    channel.bind('message', data =>
-      {this.messages.push(data);
-        this.viewPort.scrollToIndex((this.messages.length), 'smooth');
-
+    // Subscribing at chat channel
+    var channel = this.pusher.subscribe('chatglobal');
+    channel.bind('message', data =>{
+        this.messages.push(data);
+        this.viewPort.scrollToIndex((this.messages.length));
       }
     );
   }
 
   submit():void{
 
-    this.messagesService.send_message(this.username, this.message)
+    this.messagesService.send_message_to_global(this.message)
     .subscribe(
       ()=>{
         this.message = '';
