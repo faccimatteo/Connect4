@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { Subject } from 'rxjs';
+import Pusher from 'pusher-js';
+import { Observable, of, Subject } from 'rxjs';
 
 import { AppState } from './../../ngxs';
 import { SetGameOver, StartNewGame, UpdateBoard } from './../../ngxs/actions/connect4.actions';
 import { Connect4Board, GameOverInfo, PlayerIndex } from './../../ngxs/state/connect4.state';
 import { connect4 } from './../../settings';
-import { AudioService } from './../../shared/services/audio/audio.service';
 
 export type DiskAddedSubject = { slotFilled: number; byPlayerIndex: PlayerIndex };
-export type GameStatusSubject = { status: 'gameOver' | 'newGame' };
+export type GameStatusSubject = { status: 'gameOver' };
 
 @Injectable({
     providedIn: 'root'
@@ -18,7 +18,13 @@ export class Connect4Service {
     diskAddedSubject: Subject<DiskAddedSubject> = new Subject(); // trigger when a disk is added
     gameStatusSubject: Subject<GameStatusSubject> = new Subject(); // trigger when game finished or start
     winConditionsArray: number[][];
-    constructor(private store: Store, private audioService: AudioService) {
+    private pusher;
+    private channel;
+    private matchId;
+    private player1;
+    private player2;
+
+    constructor(private store: Store) {
         this.winConditionsArray = this.getWinConditionsArray();
     }
 
@@ -27,9 +33,15 @@ export class Connect4Service {
         this.gameStatusSubject.next({ status: 'gameOver' });
     }
 
+    // We are sure that we have already received all the data from match at this point
     public newGame(): void {
+        // We create the channel and we subscribe on it
+        this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
+          cluster: 'eu'
+        });
+        this.channel = this.pusher.subscribe(this.matchId);
         this.store.dispatch(new StartNewGame());
-        this.gameStatusSubject.next({ status: 'newGame' });
+        //this.gameStatusSubject.next({ status: 'newGame' });
     }
 
     public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex): null | number {
@@ -51,13 +63,12 @@ export class Connect4Service {
             this.store.dispatch(new UpdateBoard(availableSlotIndex, playerIndex));
             // emit event
             this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: playerIndex });
-        } else {
-            this.audioService.playAudio('columnFull');
         }
 
         return availableSlotIndex;
     }
 
+    // TODO: we have to insert a win in the db
     public checkGameFinished(): null | GameOverInfo {
         const boardSnapshot = this.store.selectSnapshot<Connect4Board>(
             (state: AppState) => state.connect4.currentBoard
@@ -170,5 +181,21 @@ export class Connect4Service {
         getCombinationBundleOf(rowsTemplate);
         getDiagonals();
         return result;
+    }
+
+    public receiveMatchData(matchId:string, player1:string, player2:String):Observable<any>{
+      return new Observable<any>(()=>{
+        this.matchId = matchId;
+        this.player1 = player1;
+        this.player2 = player2;
+    })
+    }
+
+    public get_player1():Observable<any>{
+      return of(this.player1);
+    }
+
+    public get_player2():Observable<any>{
+      return of(this.player2);
     }
 }

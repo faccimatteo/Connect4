@@ -20,4 +20,8 @@
         </mat-menu>
 
 </mat-toolbar>
+<div *ngIf="!is_allowed()">
+  <app-login></app-login>
+</div>
+
   <router-outlet></router-outlet>

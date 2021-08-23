@@ -20,6 +20,6 @@
         <div>{{ playerStatusLabel }}</div>
     </div>
     <div class="banner-info__new-game-section" *ngIf="isGameOver">
-        <button mat-stroked-button i18n="@@notificationInfo.playAgain" (click)="newGame()">Play again</button>
+        <button mat-stroked-button routerLink="/home">Torna alla home</button>
     </div>
 </div>

@@ -24,6 +24,8 @@ export class SearchMatchesComponent implements OnInit {
   //private profilepic;
   private snackBarRef;
   private pusher;
+  private channel;
+  private matchFound: boolean = false;
 
   constructor(private clientHttp: ClientHttpService, private _snackBar: MatSnackBar, private dialog:MatDialog, private router:Router, private matches:MatchesService) {
     // Using Pusher to communicate user that match has been found
@@ -37,17 +39,20 @@ export class SearchMatchesComponent implements OnInit {
   searchMatch(){
 
     // Listening on a pusher channel
-    var channel = this.pusher.subscribe('lookingForAMatch');
+    this.channel = this.pusher.subscribe('lookingForAMatch');
 
     // We register this user as lookingForAMatch
     this.clientHttp.setLookingForAMatch(true).subscribe(() => {
       this.snackBarRef = this._snackBar.open('Cercando una nuova partita..', 'Cancella');
 
       // Subscribing at matchFound channel
-      channel.bind('matchFound', data =>{
+      this.channel.bind('matchFound', data =>{
         console.log("data is ", data)
-        if(data.username == this.clientHttp.get_username())
+        if(data.challenged == this.clientHttp.get_username())
+          // We stop looking for a match if the event is triggered so noone can find a game against us
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
+            // We open the dialog and inform the user that the match against data.username is starting
+            this.matchFound = true;
             this.openDialog(data.username, data.matchId)
           })
         }
@@ -69,18 +74,22 @@ export class SearchMatchesComponent implements OnInit {
       // We found a user to play with
       if(response.user != null){
         console.log("match has been created")
+        // We unsubscribe from the channel otherwise we get event that we triggered
+        this.channel.unsubscribe('matchFound');
+        // We dismiss the snackbar to stop looking for a match
+        this.snackBarRef.dismiss()
         this.matches.createMatch(response.user.username).subscribe((matchresponse) => {
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
             this.openDialog(response.user.username, matchresponse.id)
             console.log(response.user.username + " informed that the match has been created")
-            this.matches.informingMatchFound(response.user.username, matchresponse.id).subscribe(() => {
+            this.matches.informingMatchFound(this.clientHttp.get_username(), response.user.username, matchresponse.id).subscribe(() => {
               console.log("user " + response.user.username + " has been notificated of the match started by " + this.clientHttp.get_username())
             })
           })
         })
 
       }
-      else
+      else if(!this.matchFound)
         setTimeout(()=>{this.pairUser()}, this.timeoutResearch)
       //})
     })

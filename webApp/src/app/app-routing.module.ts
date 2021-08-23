@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { ChatComponent } from './chat/chat.component';
 import { FriendsListComponent } from './friends-list/friends-list.component';
 import { FriendshipRequestsComponent } from './friendship-requests/friendship-requests.component';
 import { HomeComponent } from './home/home.component';
@@ -15,14 +14,13 @@ import { SignupComponent } from './signup/signup.component';
 import { StatsComponent } from './stats/stats.component';
 
 const routes: Routes = [
-  { path: '',   redirectTo: '/home', pathMatch: 'full' },
+  { path: '',   redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: HomeComponent },
   { path: 'home/stats', component: StatsComponent },
   { path: 'home/friends', component: FriendsListComponent },
   { path: 'home/searchFriends', component: SearchFriendsComponent },
   { path: 'friendshipRequests', component: FriendshipRequestsComponent },
   { path: 'manageUsers', component: ManageUsersComponent },
-  { path: 'chat', component: ChatComponent },
   { path: 'match/:id', component: MatchComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'login', component: LoginComponent },

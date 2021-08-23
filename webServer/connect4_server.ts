@@ -1104,9 +1104,10 @@ app.post("/matchFound", auth, (req,res,next) => {
           }else{
             pusher.trigger("lookingForAMatch", "matchFound", {
               username: req.body.username,
+              challenged: req.body.challenged,
               matchId: req.body.matchId
             });
-            return res.status(200).json({message:"match found", against:req.body.username});
+            return res.status(200).json({message:"match found", username: req.body.username, against:req.body.challenged});
           }
         })
       }
@@ -1115,7 +1116,39 @@ app.post("/matchFound", auth, (req,res,next) => {
     
   }
   
+})
+
+// Pusher Connect4 API
+app.post("/gamePlaying", auth, (req,res,next) => {
   
+  // We use session field too to avoid user making unauthorized requests
+  if(req.body.matchId == null || req.body.playerIndex == null || req.body.columnIndex == null || req.body.session == null)
+    return next({ statusCode:404, error: true, errormessage: "Body must contain matchId, playerIndex, columnIndex and turn fields"});
+  else{
+    match.getModel().findById(req.body.id, (err, result) => {
+      if(err != null)
+        return next({statusCode:err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB."});
+      else{
+        const allowed_players = [result.player1, result.player2];
+        // Checking if player is allowed 
+        if(!allowed_players.includes(req.user.username)){
+          return next({ statusCode:404, error: true, errormessage: "User " + req.user.username + " is not allowed to play the game"});
+        }
+        else{
+          // TODO: check if session is right
+
+          // Sending event trigger on pusher 
+          pusher.trigger(req.body.matchId, "nextMove", {
+            playerIndex: req.body.playerIndex,
+            columnIndex: req.body.columnIndex,
+            session: req.body.session
+          });
+          
+          return res.status(200).json({message:"match found", username: req.body.username, against:req.body.challenged});
+        }
+      }
+    })
+  }
 })
 
 

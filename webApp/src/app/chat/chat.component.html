@@ -1,7 +1,7 @@
 <div id='container'>
   <mat-card>
     <mat-card-header color="primary">
-      <mat-card-title >Benvenuto nella chat globale, {{username}}!</mat-card-title>
+      <mat-card-title >Benvenuto nella chat, {{username}}!</mat-card-title>
     </mat-card-header>
       <cdk-virtual-scroll-viewport itemSize="50" class="viewport">
         <div *ngFor="let msg of messages" class="item">

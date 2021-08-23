@@ -24,11 +24,9 @@ export class DiskComponent implements OnInit {
         });
 
         this.connect4Service.gameStatusSubject.subscribe(({ status }) => {
-            if (status === 'newGame') {
-                this.resetDiskState();
-            } else if (status === 'gameOver') {
-                this.checkIfMatchingWinCondition();
-            }
+          if(status === 'gameOver') {
+              this.checkIfMatchingWinCondition();
+          }
         });
     }
 

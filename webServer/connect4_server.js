@@ -867,9 +867,10 @@ app.post("/matchFound", auth, (req, res, next) => {
                     else {
                         pusher.trigger("lookingForAMatch", "matchFound", {
                             username: req.body.username,
+                            challenged: req.body.challenged,
                             matchId: req.body.matchId
                         });
-                        return res.status(200).json({ message: "match found", against: req.body.username });
+                        return res.status(200).json({ message: "match found", username: req.body.username, against: req.body.challenged });
                     }
                 });
             }

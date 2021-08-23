@@ -25,8 +25,7 @@ export class AppComponent {
   ngOnInit(){
     if (localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ""){
       const exptime = (jwt_decode(this.clientHttp.get_token()) as TokenData).exp
-
-      if (Number(String(Date.now()).substr(0,9)) - exptime > 0)
+      if (Number(String(Date.now()).substr(0,10)) - exptime > 0)
         localStorage.setItem('connect4_token','')
     }
   }

@@ -1,10 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Injectable, Input, OnInit } from '@angular/core';
 import Pusher from 'pusher-js';
 import { ClientHttpService } from '../client-http.service';
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { MessagesService } from '../messages.service';
 import { ViewChild } from '@angular/core';
-
 
 @Component({
   selector: 'app-chat',
@@ -13,6 +12,9 @@ import { ViewChild } from '@angular/core';
 })
 export class ChatComponent implements OnInit {
 
+  @Input()
+  id: string = '';
+
   @ViewChild(CdkVirtualScrollViewport) viewPort: CdkVirtualScrollViewport;
   username = '';
   messages = [];
@@ -20,17 +22,17 @@ export class ChatComponent implements OnInit {
   private pusher;
 
   constructor(private messagesService:MessagesService, private clientHttp:ClientHttpService) {
-    this.username = clientHttp.get_username()
+    this.username = this.clientHttp.get_username()
     // Using Pusher for real time chat
     this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
       cluster: 'eu'
     });
-   }
+  }
 
   ngOnInit(): void {
 
     // Subscribing at chat channel
-    var channel = this.pusher.subscribe('chatglobal');
+    var channel = this.pusher.subscribe('chat' + this.id);
     channel.bind('message', data =>{
         this.messages.push(data);
         this.viewPort.scrollToIndex((this.messages.length));

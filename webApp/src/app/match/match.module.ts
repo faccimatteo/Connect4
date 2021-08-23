@@ -16,7 +16,9 @@ import { ThemingService } from './shared/services/theming/theming.service';
 import RootState from './ngxs/state/root.state';
 
 @NgModule({
-    declarations: [MatchComponent],
+    declarations: [
+      MatchComponent
+    ],
     imports: [
         BrowserModule,
         BrowserAnimationsModule,

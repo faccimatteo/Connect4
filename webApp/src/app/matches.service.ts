@@ -1,4 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { StringMap } from '@angular/compiler/src/compiler_facade_interface';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -37,15 +38,25 @@ export class MatchesService {
   }
 
   // Inform the user that the match has been found
-  informingMatchFound(username:string, matchId:string):Observable<any>{
+  informingMatchFound(username:string, challenged:string, matchId:string):Observable<any>{
     return this.http.post(this.url + '/matchFound',{
       username: username,
-      matchId: matchId
+      matchId: matchId,
+      challenged
     }, this.logged).pipe(
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting informingMatchFound'))
+    );
+  }
+
+  getMatchById(id:string):Observable<any>{
+    return this.http.get(this.url + '/matches/' + id, this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting getMatchById'))
     );
   }
 

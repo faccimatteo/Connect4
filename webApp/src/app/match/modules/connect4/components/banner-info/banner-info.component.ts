@@ -13,13 +13,13 @@ import { Connect4Service } from './../../connect4.service';
 })
 export class BannerInfoComponent implements OnInit {
     translations = {
-        player1: $localize`:@@notificationInfo.player1:Mario`,
-        player2: $localize`:@@notificationInfo.player2:Paolo`,
-        yourTurn: $localize`:@@notificationInfo.yourTurn:your turn !`,
-        wins: $localize`:@@notificationInfo.wins:wins !`,
-        noWinner: $localize`:@@notificationInfo.noWinner:No winner !`,
-        gameOver: $localize`:@@notificationInfo.gameOver:Game over.`,
-        draw: $localize`:@@notificationInfo.gameOver:Draw.`
+      player1: $localize`:@@notificationInfo.player1:`,
+      player2: $localize`:@@notificationInfo.player2:`,
+      yourTurn: $localize`:@@notificationInfo.yourTurn:your turn !`,
+      wins: $localize`:@@notificationInfo.wins:wins !`,
+      noWinner: $localize`:@@notificationInfo.noWinner:No winner !`,
+      gameOver: $localize`:@@notificationInfo.gameOver:Game over.`,
+      draw: $localize`:@@notificationInfo.gameOver:Draw.`
     };
     playerNameLabel!: string | null;
     playerStatusLabel!: string | null;
@@ -28,21 +28,28 @@ export class BannerInfoComponent implements OnInit {
     isGameOver!: boolean;
     constructor(private store: Store, private connect4Service: Connect4Service, private clientHttp:ClientHttpService) {}
 
-    ngOnInit(): void {
+    ngOnInit(){
+        this.connect4Service.get_player1().subscribe((player1)=>{
+          this.connect4Service.get_player2().subscribe((player2) => {
+            this.translations.player1 += player1;
+            this.translations.player2 += player2;
+          })
+        })
+
         this.connect4Service.diskAddedSubject.subscribe(({ byPlayerIndex }) => {
-            if (!this.isGameOver) {
-                const nextPlayer = byPlayerIndex === 1 ? 2 : 1;
-                this.updatePlayerSection(nextPlayer);
-            }
-        });
+          if (!this.isGameOver) {
+              const nextPlayer = byPlayerIndex === 1 ? 2 : 1;
+              this.updatePlayerSection(nextPlayer);
+          }
+        })
+
         this.connect4Service.gameStatusSubject.subscribe(({ status }) => {
-            if (status === 'newGame') {
-                this.initialize();
-            } else {
-                this.displayGameOver();
-            }
-        });
+          if (status === 'gameOver') {
+            this.displayGameOver();
+          }
+        })
         this.initialize();
+
     }
 
     private updatePlayerSection(pIndex: PlayerIndex): void {
