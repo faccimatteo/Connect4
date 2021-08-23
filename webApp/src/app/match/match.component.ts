@@ -1,6 +1,6 @@
 import { Component, HostBinding, OnDestroy, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 import { Connect4Service } from './modules/connect4/connect4.service';
 import { AudioService } from './shared/services/audio/audio.service';
@@ -8,6 +8,7 @@ import { AppSettingsService } from './shared/services/appSettings/app-service.se
 import { ThemingService } from './shared/services/theming/theming.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatchesService } from '../matches.service';
+import { Connect4State } from './ngxs/state/connect4.state';
 
 @Component({
     selector: 'app-match',
@@ -15,7 +16,7 @@ import { MatchesService } from '../matches.service';
     styleUrls: ['./match.component.scss']
 })
 export class MatchComponent implements OnInit, OnDestroy {
-    id:string = this.route.snapshot.paramMap.get('id');
+    public id:string = this.route.snapshot.paramMap.get('id');
     themingSubscription!: Subscription;
 
     constructor(
@@ -30,11 +31,8 @@ export class MatchComponent implements OnInit, OnDestroy {
     @HostBinding('class') public cssClass!: string;
 
     ngOnInit(): void {
-      this.matches.getMatchById(this.id).subscribe((response) => {
-        this.connect4Service.receiveMatchData(this.id, response.player1, response.player2).subscribe(() => {
-          this.connect4Service.newGame();
-        });
-      })
+
+
       this.connect4Service.diskAddedSubject.subscribe(() => {
         const gameFinishInfo = this.connect4Service.checkGameFinished();
         if (gameFinishInfo !== null) {
@@ -49,9 +47,13 @@ export class MatchComponent implements OnInit, OnDestroy {
       this.themingSubscription = this.themingService.themeBS.subscribe((theme: string) => {
           this.cssClass = theme;
       });
+
+      this.connect4Service.newGame();
+
     }
 
     ngOnDestroy(): void {
         this.themingSubscription.unsubscribe();
     }
+
 }

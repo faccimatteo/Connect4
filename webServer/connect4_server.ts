@@ -724,6 +724,7 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
               match.getModel().create({
                 player1: req.body.player1,
                 player2: req.body.player2,
+                beginner: null,
                 spectators: req.body.spectators,
                 winner: req.body.winner,
                 ended: true
@@ -738,14 +739,16 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
             }
             
           }else{
+            const index = Math.floor(Math.random() * 2)
             match.getModel().create({
               player1: req.body.player1,
               player2: req.body.player2,
+              beginner: players[index],
               spectators: [],
               winner: undefined,
               ended: false
             }).then((matchCreated)=>{
-              return res.status(200).json({message:'New match correctly added', id: matchCreated._id});
+              return res.status(200).json({message:'New match correctly added', id: matchCreated._id, match: matchCreated});
             }).catch((reason)=>{
               return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
             });
@@ -806,7 +809,8 @@ app.get("/matches/:id/players", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
   match.getModel().findOne({_id:myId}).select({player1:1,player2:1}).then((players)=>{
-    res.status(200).json(players);
+    const p = [players.player1, players.player2]
+    res.status(200).json({players:p});
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -1004,6 +1008,20 @@ app.get("/matches/:id/setWinner/:username", auth, (req,res,next) => {
     })
   }
 })
+
+// Return the winner of a match
+app.get("/matches/:id/beginner", auth, (req,res,next) => {
+  
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findById(myId, (err,result)=>{
+    if(err != null)
+      return next({ statusCode:err.code, error: true, errormessage: "Match " + myId + " not found"}); 
+    else
+      return res.status(200).json({beginner:result.beginner});
+  }).catch((reason)=>{
+    return next({ statusCode:reason.code, error: true, errormessage: "DB error: " + reason}); 
+  })
+});
 
 // Return the winner of a match
 app.get("/matches/:id/winner", auth, (req,res,next) => {

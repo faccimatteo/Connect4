@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
+import { Observable } from 'rxjs';
 
 import { AppState } from './../../../../ngxs';
 import { PlayerIndex } from './../../../../ngxs/state/connect4.state';
@@ -18,6 +19,7 @@ export class BoardComponent implements OnInit {
     rowHeight!: string;
     i18nTest!: string;
     isGameOver!: boolean;
+
     constructor(
         private store: Store,
         private connect4Service: Connect4Service,

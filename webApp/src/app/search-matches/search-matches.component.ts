@@ -79,6 +79,7 @@ export class SearchMatchesComponent implements OnInit {
         // We dismiss the snackbar to stop looking for a match
         this.snackBarRef.dismiss()
         this.matches.createMatch(response.user.username).subscribe((matchresponse) => {
+          console.log(matchresponse)
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
             this.openDialog(response.user.username, matchresponse.id)
             console.log(response.user.username + " informed that the match has been created")

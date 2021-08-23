@@ -60,6 +60,23 @@ export class MatchesService {
     );
   }
 
+  getBeginner(id:string):Observable<any>{
+    return this.http.get(this.url + '/matches/' + id + '/beginner', this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting getBeginner'))
+    );
+  }
+
+  getPlayers(id:string):Observable<any>{
+    return this.http.get(this.url + '/matches/' + id + '/players', this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting getPlayers'))
+    );
+  }
 
 
 

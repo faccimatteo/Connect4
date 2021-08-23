@@ -1,9 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { ClientHttpService } from 'src/app/client-http.service';
+import { MatchComponent } from 'src/app/match/match.component';
+import { MatchesService } from 'src/app/matches.service';
 
 import { AppState } from './../../../../ngxs';
-import { PlayerIndex } from './../../../../ngxs/state/connect4.state';
+import { Connect4State, PlayerIndex } from './../../../../ngxs/state/connect4.state';
 import { Connect4Service } from './../../connect4.service';
 
 @Component({
@@ -26,16 +28,18 @@ export class BannerInfoComponent implements OnInit {
     gameOverLabel!: string | null;
     playingPlayerIndex!: PlayerIndex | null;
     isGameOver!: boolean;
-    constructor(private store: Store, private connect4Service: Connect4Service, private clientHttp:ClientHttpService) {}
+    constructor(private store: Store, private connect4Service: Connect4Service, private matches:MatchesService, private matchcomponent:MatchComponent,  private connect4State: Connect4State) {}
 
     ngOnInit(){
-        this.connect4Service.get_player1().subscribe((player1)=>{
-          this.connect4Service.get_player2().subscribe((player2) => {
-            this.translations.player1 += player1;
-            this.translations.player2 += player2;
-          })
-        })
 
+      this.matches.getMatchById(this.matchcomponent.id).subscribe((response) => {
+
+        this.connect4Service.receiveMatchData(this.matchcomponent.id, response.player1, response.player2)
+        this.translations.player1 += this.connect4Service.get_player1();
+        this.translations.player2 += this.connect4Service.get_player2();
+        this.connect4State.receiveMatchData(this.matchcomponent.id, response.player1, response.player2)
+        console.log(this.translations.player1, this.translations.player2)
+        // We got all the info that we needed now we can start the match
         this.connect4Service.diskAddedSubject.subscribe(({ byPlayerIndex }) => {
           if (!this.isGameOver) {
               const nextPlayer = byPlayerIndex === 1 ? 2 : 1;
@@ -48,7 +52,9 @@ export class BannerInfoComponent implements OnInit {
             this.displayGameOver();
           }
         })
+
         this.initialize();
+      });
 
     }
 

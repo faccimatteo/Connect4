@@ -13,6 +13,11 @@ var matchSchema = new mongoose_1.Schema({
         type: mongoose.SchemaTypes.String,
         required: true
     },
+    beginner: {
+        type: mongoose.SchemaTypes.String,
+        required: false,
+        default: null
+    },
     spectators: [{
             type: mongoose.SchemaTypes.Mixed,
             required: true

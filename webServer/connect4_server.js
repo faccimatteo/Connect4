@@ -552,6 +552,7 @@ app.route("/matches").get(auth, (req, res, next) => {
                             match.getModel().create({
                                 player1: req.body.player1,
                                 player2: req.body.player2,
+                                beginner: null,
                                 spectators: req.body.spectators,
                                 winner: req.body.winner,
                                 ended: true
@@ -566,14 +567,16 @@ app.route("/matches").get(auth, (req, res, next) => {
                         }
                     }
                     else {
+                        const index = Math.floor(Math.random() * 2);
                         match.getModel().create({
                             player1: req.body.player1,
                             player2: req.body.player2,
+                            beginner: players[index],
                             spectators: [],
                             winner: undefined,
                             ended: false
                         }).then((matchCreated) => {
-                            return res.status(200).json({ message: 'New match correctly added', id: matchCreated._id });
+                            return res.status(200).json({ message: 'New match correctly added', id: matchCreated._id, match: matchCreated });
                         }).catch((reason) => {
                             return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
                         });
@@ -619,7 +622,8 @@ app.route("/matches/:id").delete(auth, (req, res, next) => {
 app.get("/matches/:id/players", auth, (req, res, next) => {
     const myId = mongoose.Types.ObjectId(req.params.id);
     match.getModel().findOne({ _id: myId }).select({ player1: 1, player2: 1 }).then((players) => {
-        res.status(200).json(players);
+        const p = [players.player1, players.player2];
+        res.status(200).json({ players: p });
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
@@ -780,6 +784,18 @@ app.get("/matches/:id/setWinner/:username", auth, (req, res, next) => {
     }
 });
 // Return the winner of a match
+app.get("/matches/:id/beginner", auth, (req, res, next) => {
+    const myId = mongoose.Types.ObjectId(req.params.id);
+    match.getModel().findById(myId, (err, result) => {
+        if (err != null)
+            return next({ statusCode: err.code, error: true, errormessage: "Match " + myId + " not found" });
+        else
+            return res.status(200).json({ beginner: result.beginner });
+    }).catch((reason) => {
+        return next({ statusCode: reason.code, error: true, errormessage: "DB error: " + reason });
+    });
+});
+// Return the winner of a match
 app.get("/matches/:id/winner", auth, (req, res, next) => {
     const myId = mongoose.Types.ObjectId(req.params.id);
     match.getModel().findOne({ _id: myId }).select({ winner: 1 }).then((result) => {
@@ -873,6 +889,35 @@ app.post("/matchFound", auth, (req, res, next) => {
                         return res.status(200).json({ message: "match found", username: req.body.username, against: req.body.challenged });
                     }
                 });
+            }
+        });
+    }
+});
+// Pusher Connect4 API
+app.post("/gamePlaying", auth, (req, res, next) => {
+    // We use session field too to avoid user making unauthorized requests
+    if (req.body.matchId == null || req.body.playerIndex == null || req.body.columnIndex == null || req.body.session == null)
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId, playerIndex, columnIndex and turn fields" });
+    else {
+        match.getModel().findById(req.body.id, (err, result) => {
+            if (err != null)
+                return next({ statusCode: err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB." });
+            else {
+                const allowed_players = [result.player1, result.player2];
+                // Checking if player is allowed 
+                if (!allowed_players.includes(req.user.username)) {
+                    return next({ statusCode: 404, error: true, errormessage: "User " + req.user.username + " is not allowed to play the game" });
+                }
+                else {
+                    // TODO: check if session is right
+                    // Sending event trigger on pusher 
+                    pusher.trigger(req.body.matchId, "nextMove", {
+                        playerIndex: req.body.playerIndex,
+                        columnIndex: req.body.columnIndex,
+                        session: req.body.session
+                    });
+                    return res.status(200).json({ message: "match found", username: req.body.username, against: req.body.challenged });
+                }
             }
         });
     }
