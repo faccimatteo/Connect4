@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
+import { ClientHttpService } from 'src/app/client-http.service';
+import { MatchesService } from 'src/app/matches.service';
 
 import { AppState } from './../../../../ngxs';
 import { PlayerIndex } from './../../../../ngxs/state/connect4.state';
@@ -23,7 +25,9 @@ export class BoardComponent implements OnInit {
     constructor(
         private store: Store,
         private connect4Service: Connect4Service,
-        private breakpointService: BreakpointService
+        private breakpointService: BreakpointService,
+        private clientHttp: ClientHttpService,
+        private matches: MatchesService
     ) {}
 
     ngOnInit(): void {
@@ -42,15 +46,26 @@ export class BoardComponent implements OnInit {
     }
 
     public onClickColumn(columnIndex: number): void {
-        const { playerIndex, isGameOver } = this.store.selectSnapshot<{
+        // We get a snapshot from the store to know the exact user that it's allowed to play
+        const { matchId, playerIndex, isGameOver } = this.store.selectSnapshot<{
+            matchId: string | null,
             playerIndex: PlayerIndex | null;
             isGameOver: boolean;
         }>((state: AppState) => ({
+            // We get the matchId and player index
+            matchId: state.connect4.matchId,
             playerIndex: state.connect4.playerPlaying,
             isGameOver: state.connect4.gameOver
         }));
-        if (!isGameOver) {
-            this.connect4Service.addDiskInColumn(columnIndex, playerIndex);
+
+        // At this point we already have created the match so we can access to the values above
+        this.matches.getTurn(matchId).subscribe((response) => {
+          if (!isGameOver && this.clientHttp.get_username() == response.turn) {
+            this.connect4Service.addDiskInColumn(columnIndex, playerIndex, this.clientHttp.get_username());
+            // We send event on channel matchId so we can inform the other player that it's his/her turn
+
         }
+        })
+
     }
 }

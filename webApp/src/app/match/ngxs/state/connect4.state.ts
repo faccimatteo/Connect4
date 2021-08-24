@@ -13,25 +13,32 @@ export type PlayerIndex = 1 | 2;
 export type Connect4Board = (PlayerIndex | null)[];
 
 export type Connect4Status = {
+    player: string | null,
     playerPlaying: PlayerIndex | null;
     winner: PlayerIndex | null;
     winConditionResolved: number[] | null;
     gameOver: boolean;
 };
 
-export type GameOverInfo = { winConditionResolved: number[] | null; byPlayer: PlayerIndex | null };
+export type GameOverInfo = { winConditionResolved: number[] | null; byPlayer: PlayerIndex | null; winnerPlayer: string | null};
 
 export interface Connect4Model {
+    matchId: string | null,
+    player: string | null,
     currentBoard: Connect4Board;
     playerPlaying: PlayerIndex | null;
+    winnerPlayer: string | null;
     winner: PlayerIndex | null;
     winConditionResolved: number[] | null;
     gameOver: boolean;
 }
 
 const initialState: Connect4Model = {
+    matchId: null,
     currentBoard: new Array(connect4.nbColumns * connect4.nbRows).fill(null),
     playerPlaying: null,
+    player: null,
+    winnerPlayer: null,
     winner: null,
     winConditionResolved: null,
     gameOver: false
@@ -44,13 +51,6 @@ const initialState: Connect4Model = {
 @Injectable()
 export class Connect4State {
 
-    // We use pusher to let users communicate
-    private pusher;
-    private channel;
-    private matchId;
-    private player1;
-    private player2;
-
     constructor(private matches:MatchesService) {
     }
 
@@ -61,8 +61,9 @@ export class Connect4State {
 
     @Selector()
     static getGameStatus(state: Connect4Model): Connect4Status {
-        const { playerPlaying, winner, gameOver, winConditionResolved } = state;
+        const { player, playerPlaying, winner, gameOver, winConditionResolved } = state;
         return {
+            player,
             playerPlaying,
             winner,
             winConditionResolved,
@@ -73,10 +74,12 @@ export class Connect4State {
     @Action(UpdateBoard)
     updateBoard({ getState, patchState, dispatch }: StateContext<Connect4Model>, payload: UpdateBoard): void {
         const state = getState();
-        const { circleIndex, playerIndex } = payload;
+        const { circleIndex, playerIndex, player } = payload;
         const updatedBoard = [...state.currentBoard];
         updatedBoard[circleIndex] = playerIndex;
-        dispatch(new NextTurn());
+
+        // We say that the next turn is the one passed in updateBoard
+        dispatch(new NextTurn(player));
         patchState({
             ...state,
             currentBoard: updatedBoard
@@ -84,12 +87,14 @@ export class Connect4State {
     }
 
     @Action(NextTurn)
-    nextTurn({ getState, patchState }: StateContext<Connect4Model>): void {
+    nextTurn({ getState, patchState }: StateContext<Connect4Model>, payload:NextTurn): void {
         const state = getState();
         const nextPlayerIndex = state.playerPlaying === 1 ? 2 : 1;
 
+        // One we want to change turn we update the player and the position
         patchState({
             ...state,
+            player: payload.nextPlayer,
             playerPlaying: nextPlayerIndex
         });
     }
@@ -97,8 +102,10 @@ export class Connect4State {
     @Action(SetGameOver)
     setGameOver({ getState, patchState }: StateContext<Connect4Model>, payload: SetGameOver): void {
         const state = getState();
+        // We get winnerPlayer so we can know which player has won and we get winner index too so we can display it on banner-info
         patchState({
             ...state,
+            winnerPlayer: payload.winnerPlayer,
             winner: payload.winnerPlayerIndex,
             winConditionResolved: payload.winConditionResolved,
             gameOver: true
@@ -108,21 +115,24 @@ export class Connect4State {
     @Action(StartNewGame)
     startNewGame({ getState, patchState }: StateContext<Connect4Model>, payload: StartNewGame): void {
       // Setting beginner of the match by getting info from the db
+      console.log(payload.matchId)
       this.matches.getPlayers(payload.matchId).subscribe((players) => {
         this.matches.getTurn(payload.matchId).subscribe((beginner) => {
           const index = (players.players).indexOf(beginner.turn)
-          console.log("playerindex at start " + index)
+          console.log("playerindex at start from players is " + players.players[index])
           patchState({
             ...initialState,
-            playerPlaying: index as 1 | 2
+            matchId: payload.matchId,
+            player: players.players[index],
+            playerPlaying: (index+1) as 1 | 2
           });
           var state = getState()
-          console.log("playerplay is current: " + state.playerPlaying)
+          console.log("playerplaying is current: " + state.playerPlaying)
           // We create the channel and we subscribe on it
-          this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
-            cluster: 'eu'
-          });
-          this.channel = this.pusher.subscribe(payload.matchId);
+          //this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
+          //  cluster: 'eu'
+          //});
+          //this.channel = this.pusher.subscribe(payload.matchId);
         })
       })
     }

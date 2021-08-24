@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Store } from '@ngxs/store';
 import Pusher from 'pusher-js';
 import { Observable, of, Subject } from 'rxjs';
+import { MatchesService } from 'src/app/matches.service';
 
 import { AppState } from './../../ngxs';
 import { SetGameOver, StartNewGame, UpdateBoard } from './../../ngxs/actions/connect4.actions';
@@ -23,12 +24,12 @@ export class Connect4Service {
   private player1;
   private player2;
 
-  constructor(private store: Store) {
+  constructor(private store: Store, private matches:MatchesService) {
       this.winConditionsArray = this.getWinConditionsArray();
   }
 
   public gameFinish(gameFinishInfo: GameOverInfo): void {
-      this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
+      this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved, gameFinishInfo.winnerPlayer));
       this.gameStatusSubject.next({ status: 'gameOver' });
   }
 
@@ -39,7 +40,7 @@ export class Connect4Service {
       //this.gameStatusSubject.next({ status: 'newGame' });
   }
 
-  public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex): null | number {
+  public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex, player: string ): null | number {
       const board = this.store.selectSnapshot<Connect4Board>((state: AppState) => state.connect4.currentBoard);
       let availableSlotIndex = null;
       const { nbColumns } = connect4;
@@ -55,7 +56,7 @@ export class Connect4Service {
 
       if (availableSlotIndex !== null) {
           // update store
-          this.store.dispatch(new UpdateBoard(availableSlotIndex, playerIndex));
+          this.store.dispatch(new UpdateBoard(availableSlotIndex, playerIndex, player));
           // emit event
           this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: playerIndex });
       }
@@ -81,13 +82,24 @@ export class Connect4Service {
       if (isBoardFullOfDisks) {
           return {
               winConditionResolved: null,
-              byPlayer: null
+              byPlayer: null,
+              winnerPlayer: null
           };
       }
 
-      return result.length > 0
-          ? { winConditionResolved: result[0], byPlayer: boardSnapshot[result[0][0]] as 1 | 2 }
-          : null;
+      if(result.length > 0){
+        var matchPlayers;
+        var playerIndex;
+        // We know that given a position we can retrieve the winner (as far we did in connect4state when we started the game)
+        this.matches.getPlayers(this.matchId).subscribe((players) => {
+          playerIndex = boardSnapshot[result[0][0]] as 1 | 2;
+          matchPlayers = players.players
+
+        })
+
+        return { winConditionResolved: result[0], byPlayer: boardSnapshot[result[0][0]] as 1 | 2, winnerPlayer:matchPlayers[playerIndex-1]}
+      }else
+        return null;
   }
 
   public getWinConditionsArray(): number[][] {

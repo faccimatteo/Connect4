@@ -1172,7 +1172,7 @@ app.post("/doMove", auth, (req,res,next) => {
                   playerIndex: allowed_players.indexOf(req.user.username),
                   columnIndex: req.body.columnIndex,
                 });
-                return res.status(200).json({message:"move executed on match " + req.body.matchId + " and updated turn, now is " + user_turn + " turn.", columnIndex: req.body.columnIndex});
+                return res.status(200).json({message:"move executed on match " + req.body.matchId + " and updated turn, now is " + user_turn + " turn.", columnIndex: req.body.columnIndex, playerIndex:req.user.username});
               }).catch((error) => {
                 return next({statusCode:error.code, error: true, errormessage: "Canonot update match " + req.body.matchId + " in DB."});
               })
