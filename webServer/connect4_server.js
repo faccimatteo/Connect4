@@ -901,7 +901,7 @@ app.post("/matchFound", auth, (req, res, next) => {
 app.post("/doMove", auth, (req, res, next) => {
     // We use session field too to avoid user making unauthorized requests
     if (req.body.matchId == null || req.body.columnIndex == null)
-        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId, playerIndex, columnIndex and turn fields" });
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId and columnIndex fields" });
     else {
         match.getModel().findById(req.body.matchId, (err, result) => {
             if (err != null)

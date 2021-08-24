@@ -116,23 +116,19 @@ export class Connect4State {
     startNewGame({ getState, patchState }: StateContext<Connect4Model>, payload: StartNewGame): void {
       // Setting beginner of the match by getting info from the db
       console.log(payload.matchId)
+      var state = getState()
       this.matches.getPlayers(payload.matchId).subscribe((players) => {
         this.matches.getTurn(payload.matchId).subscribe((beginner) => {
           const index = (players.players).indexOf(beginner.turn)
-          console.log("playerindex at start from players is " + players.players[index])
+
           patchState({
             ...initialState,
             matchId: payload.matchId,
             player: players.players[index],
             playerPlaying: (index+1) as 1 | 2
           });
-          var state = getState()
-          console.log("playerplaying is current: " + state.playerPlaying)
-          // We create the channel and we subscribe on it
-          //this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
-          //  cluster: 'eu'
-          //});
-          //this.channel = this.pusher.subscribe(payload.matchId);
+          console.log("playerindex at start from players is " + state.playerPlaying )
+          console.log("current player turn (ngxs) : " + players.players[index])
         })
       })
     }

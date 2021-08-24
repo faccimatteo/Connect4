@@ -58,14 +58,19 @@ export class BoardComponent implements OnInit {
             isGameOver: state.connect4.gameOver
         }));
 
+
         // At this point we already have created the match so we can access to the values above
         this.matches.getTurn(matchId).subscribe((response) => {
-          if (!isGameOver && this.clientHttp.get_username() == response.turn) {
-            this.connect4Service.addDiskInColumn(columnIndex, playerIndex, this.clientHttp.get_username());
-            // We send event on channel matchId so we can inform the other player that it's his/her turn
-
-        }
+          this.matches.getPlayers(matchId).subscribe((res) => {
+            // We take the nextplayer and we pass it at addDiskInColumn
+            const nextPlayer = res.players[playerIndex == 1? 0:1];
+            console.log("presumibile nextPlayer " + nextPlayer)
+            console.log("username : " + this.clientHttp.get_username())
+            console.log("turn : " + response.turn)
+            if (!isGameOver && this.clientHttp.get_username() == response.turn) {
+              this.connect4Service.addDiskInColumn(columnIndex, playerIndex, nextPlayer);
+            }
+          })
         })
-
     }
 }

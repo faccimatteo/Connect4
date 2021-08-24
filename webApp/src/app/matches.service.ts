@@ -78,10 +78,10 @@ export class MatchesService {
     );
   }
 
-  makeMove(columnIndex:number, playerIndex:number){
+  makeMove(columnIndex:number, matchId:string){
     return this.http.post(this.url + '/doMove', {
       columnIndex: columnIndex,
-      playerIndex: playerIndex
+      matchId: matchId
     }, this.logged).pipe(
       tap((response) => {
         response

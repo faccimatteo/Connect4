@@ -31,7 +31,7 @@ export class BannerInfoComponent implements OnInit {
     constructor(private store: Store, private connect4Service: Connect4Service, private matches:MatchesService, private matchcomponent:MatchComponent,  private connect4State: Connect4State) {}
 
     ngOnInit(){
-
+      this.playingPlayerIndex = 1;
       this.matches.getMatchById(this.matchcomponent.id).subscribe((response) => {
 
         this.connect4Service.receiveMatchData(this.matchcomponent.id, response.player1, response.player2)
@@ -52,7 +52,8 @@ export class BannerInfoComponent implements OnInit {
             this.displayGameOver();
           }
         })
-
+        // We need to start the game before initializing the content on the board with initialize()
+        this.newGame();
         this.initialize();
       });
 
@@ -60,8 +61,18 @@ export class BannerInfoComponent implements OnInit {
 
     private updatePlayerSection(pIndex: PlayerIndex): void {
         const { player1, player2 } = this.translations;
-        this.playerNameLabel = pIndex === 1 ? player1 : player2;
+        const { player} = this.store.selectSnapshot<{
+            player: string | null;
+        }>((state: AppState) => ({
+            player: state.connect4.player
+        }));
+
+        this.playerNameLabel = player === player1 ? player1 : player2;
         this.playingPlayerIndex = pIndex;
+        /*old one
+        const { player1, player2 } = this.translations;
+        this.playerNameLabel = pIndex === 1 ? player1 : player2;
+        this.playingPlayerIndex = pIndex;*/
     }
 
     private initialize(): void {

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Store } from '@ngxs/store';
 import Pusher from 'pusher-js';
 import { Observable, of, Subject } from 'rxjs';
+import { ClientHttpService } from 'src/app/client-http.service';
 import { MatchesService } from 'src/app/matches.service';
 
 import { AppState } from './../../ngxs';
@@ -23,8 +24,10 @@ export class Connect4Service {
   private matchId;
   private player1;
   private player2;
+  private pusher;
+  private channel;
 
-  constructor(private store: Store, private matches:MatchesService) {
+  constructor(private store: Store, private matches:MatchesService, private clientHttp:ClientHttpService) {
       this.winConditionsArray = this.getWinConditionsArray();
   }
 
@@ -35,13 +38,31 @@ export class Connect4Service {
 
   // We are sure that we have already received all the data from match at this point
   public newGame(): void {
-
       this.store.dispatch(new StartNewGame(this.matchId));
+      // We create the channel and we subscribe on it
+      console.log("connected to pusher")
+      this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
+        cluster: 'eu'
+      });
+      this.channel = this.pusher.subscribe(this.matchId);
+      console.log("subscribed to channel")
+      this.channel.bind('nextMove', (data) => {
+        console.log("Update board from remote move request")
+        this.matches.getPlayers(this.matchId).subscribe((response) => {
+          // We check if we actually need to update our board status (because if we are the sender of the event we don't actually need to update that)
+          console.log("against " + response.players[data.playerIndex])
+          console.log("you " + this.clientHttp.get_username())
+          if(response.players[data.playerIndex] != this.clientHttp.get_username()){
+            const availableSlotIndex = data.columnIndex
+            this.store.dispatch(new UpdateBoard(availableSlotIndex, data.playerIndex, this.clientHttp.get_username()));
+          }
+        })
+      })
       //this.gameStatusSubject.next({ status: 'newGame' });
   }
 
-  public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex, player: string ): null | number {
-      const board = this.store.selectSnapshot<Connect4Board>((state: AppState) => state.connect4.currentBoard);
+  public findAvailableSlot(columnIndex: number){
+    const board = this.store.selectSnapshot<Connect4Board>((state: AppState) => state.connect4.currentBoard);
       let availableSlotIndex = null;
       const { nbColumns } = connect4;
 
@@ -54,11 +75,22 @@ export class Connect4Service {
           }
       });
 
+      return availableSlotIndex
+
+  }
+
+  public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex, player: string ): null | number {
+      const availableSlotIndex = this.findAvailableSlot(columnIndex)
+
       if (availableSlotIndex !== null) {
           // update store
           this.store.dispatch(new UpdateBoard(availableSlotIndex, playerIndex, player));
-          // emit event
+          // emit event at all the subscribed componenets
           this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: playerIndex });
+          // We send in chanel that we have done the move
+          this.matches.makeMove(columnIndex, this.matchId).subscribe(() => {
+            console.log("data sent from " + this.clientHttp.get_username() + " via pusher")
+          })
       }
 
       return availableSlotIndex;
