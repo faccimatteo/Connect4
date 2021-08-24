@@ -5,7 +5,7 @@ import {model,Document,Schema} from 'mongoose';
 export interface Match extends Document{
     player1: string,
     player2: string,
-    beginner: string,
+    turn: string,
     spectators: [string[],boolean[]],
     winner: string,
     ended: boolean,
@@ -27,7 +27,7 @@ var matchSchema = new Schema<Match>({
         type: mongoose.SchemaTypes.String,
         required: true
     },
-    beginner:   {
+    turn:   {
         type: mongoose.SchemaTypes.String,
         required: false,
         default: null

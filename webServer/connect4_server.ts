@@ -724,7 +724,7 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
               match.getModel().create({
                 player1: req.body.player1,
                 player2: req.body.player2,
-                beginner: null,
+                turn: null,
                 spectators: req.body.spectators,
                 winner: req.body.winner,
                 ended: true
@@ -743,7 +743,7 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
             match.getModel().create({
               player1: req.body.player1,
               player2: req.body.player2,
-              beginner: players[index],
+              turn: players[index],
               spectators: [],
               winner: undefined,
               ended: false
@@ -1009,15 +1009,15 @@ app.get("/matches/:id/setWinner/:username", auth, (req,res,next) => {
   }
 })
 
-// Return the winner of a match
-app.get("/matches/:id/beginner", auth, (req,res,next) => {
+// Return who is allowed to do the next move
+app.get("/matches/:id/turn", auth, (req,res,next) => {
   
   const myId = mongoose.Types.ObjectId(req.params.id);
   match.getModel().findById(myId, (err,result)=>{
     if(err != null)
       return next({ statusCode:err.code, error: true, errormessage: "Match " + myId + " not found"}); 
     else
-      return res.status(200).json({beginner:result.beginner});
+      return res.status(200).json({turn:result.turn});
   }).catch((reason)=>{
     return next({ statusCode:reason.code, error: true, errormessage: "DB error: " + reason}); 
   })
@@ -1127,23 +1127,25 @@ app.post("/matchFound", auth, (req,res,next) => {
             });
             return res.status(200).json({message:"match found", username: req.body.username, against:req.body.challenged});
           }
+        }).catch((error) => {
+          return next({statusCode:error.code, error: true, errormessage: "Canonot find match " + req.body.matchId + " from DB."});
         })
       }
+    }).catch((error) => {
+      return next({statusCode:error.code, error: true, errormessage: "Cannot connect to DB."});
     })
-
-    
   }
   
 })
 
 // Pusher Connect4 API
-app.post("/gamePlaying", auth, (req,res,next) => {
+app.post("/doMove", auth, (req,res,next) => {
   
   // We use session field too to avoid user making unauthorized requests
-  if(req.body.matchId == null || req.body.playerIndex == null || req.body.columnIndex == null || req.body.session == null)
+  if(req.body.matchId == null || req.body.columnIndex == null)
     return next({ statusCode:404, error: true, errormessage: "Body must contain matchId, playerIndex, columnIndex and turn fields"});
   else{
-    match.getModel().findById(req.body.id, (err, result) => {
+    match.getModel().findById(req.body.matchId, (err, result) => {
       if(err != null)
         return next({statusCode:err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB."});
       else{
@@ -1153,18 +1155,33 @@ app.post("/gamePlaying", auth, (req,res,next) => {
           return next({ statusCode:404, error: true, errormessage: "User " + req.user.username + " is not allowed to play the game"});
         }
         else{
-          // TODO: check if session is right
-
-          // Sending event trigger on pusher 
-          pusher.trigger(req.body.matchId, "nextMove", {
-            playerIndex: req.body.playerIndex,
-            columnIndex: req.body.columnIndex,
-            session: req.body.session
-          });
+          // Checking if the user is allowed to play at this time
+          if(req.user.username != result.turn)
+            return next({ statusCode:404, error: true, errormessage: "You're not allowed to do a move at the moment"});
+          else{
           
-          return res.status(200).json({message:"match found", username: req.body.username, against:req.body.challenged});
+            // We check that to column is correct 
+            if(req.body.columnIndex < 0 || req.body.columnIndex > 6)
+              return next({ statusCode:404, error: true, errormessage: "columnIndex must be between 0 and 6 to make a move"});
+            else{ 
+              // We take the user that is currently waiting for his turn
+              const user_turn= allowed_players.indexOf(req.user.username) == 0 ? allowed_players[1] : allowed_players[0]
+              match.getModel().updateOne({_id: req.body.matchId}, {$set: {turn: user_turn}}).then(() => {
+                // Sending event trigger on pusher 
+                pusher.trigger(req.body.matchId, "nextMove", {
+                  playerIndex: allowed_players.indexOf(req.user.username),
+                  columnIndex: req.body.columnIndex,
+                });
+                return res.status(200).json({message:"move executed on match " + req.body.matchId + " and updated turn, now is " + user_turn + " turn.", columnIndex: req.body.columnIndex});
+              }).catch((error) => {
+                return next({statusCode:error.code, error: true, errormessage: "Canonot update match " + req.body.matchId + " in DB."});
+              })
+            }
+          }
         }
       }
+    }).catch((error) => {
+      return next({statusCode:error.code, error: true, errormessage: "Cannot connect to DB."});
     })
   }
 })

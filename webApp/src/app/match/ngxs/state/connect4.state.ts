@@ -50,9 +50,8 @@ export class Connect4State {
     private matchId;
     private player1;
     private player2;
-    @Output() eventEmitter: EventEmitter<any> = new EventEmitter<any>();
 
-    constructor(private connect4:Connect4Service, private matches:MatchesService) {
+    constructor(private matches:MatchesService) {
     }
 
     @Selector()
@@ -107,38 +106,24 @@ export class Connect4State {
     }
 
     @Action(StartNewGame)
-    startNewGame({ patchState }: StateContext<Connect4Model>): void {
-        patchState({
-            ...initialState,
-            playerPlaying: (Math.floor(Math.random() * 2) + 1) as 1 | 2
-        });
+    startNewGame({ getState, patchState }: StateContext<Connect4Model>, payload: StartNewGame): void {
       // Setting beginner of the match by getting info from the db
-     /* this.matches.getPlayers(this.matchId).subscribe((players) => {
-        this.matches.getBeginner(this.matchId).subscribe((beginner) => {
+      this.matches.getPlayers(payload.matchId).subscribe((players) => {
+        this.matches.getTurn(payload.matchId).subscribe((beginner) => {
+          const index = (players.players).indexOf(beginner.turn)
+          console.log("playerindex at start " + index)
           patchState({
             ...initialState,
-            playerPlaying: (players.players).indexOf(beginner.beginner) as 1 | 2
+            playerPlaying: index as 1 | 2
           });
+          var state = getState()
+          console.log("playerplay is current: " + state.playerPlaying)
+          // We create the channel and we subscribe on it
+          this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
+            cluster: 'eu'
+          });
+          this.channel = this.pusher.subscribe(payload.matchId);
         })
-      })*/
-    }
-
-    public receiveMatchData(matchId:string, player1:string, player2:String){
-        this.matchId = matchId;
-        this.player1 = player1;
-        this.player2 = player2;
-        // We create the channel and we subscribe on it
-        this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
-          cluster: 'eu'
-        });
-        this.channel = this.pusher.subscribe(this.matchId);
-    }
-
-    public get_player1(){
-      return this.player1;
-    }
-
-    public get_player2(){
-      return this.player2;
+      })
     }
 }

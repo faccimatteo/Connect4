@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { StringMap } from '@angular/compiler/src/compiler_facade_interface';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { ClientHttpService } from './client-http.service';
 
@@ -33,7 +33,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting searchPlayers'))
     );
   }
 
@@ -56,16 +56,16 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting getMatchById'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting getMatchById'))
     );
   }
 
-  getBeginner(id:string):Observable<any>{
-    return this.http.get(this.url + '/matches/' + id + '/beginner', this.logged).pipe(
+  getTurn(id:string):Observable<any>{
+    return this.http.get(this.url + '/matches/' + id + '/turn', this.logged).pipe(
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting getBeginner'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting getBeginner'))
     );
   }
 
@@ -74,7 +74,19 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting getPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting getPlayers'))
+    );
+  }
+
+  makeMove(columnIndex:number, playerIndex:number){
+    return this.http.post(this.url + '/doMove', {
+      columnIndex: columnIndex,
+      playerIndex: playerIndex
+    }, this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
     );
   }
 

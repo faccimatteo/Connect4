@@ -13,7 +13,7 @@ var matchSchema = new mongoose_1.Schema({
         type: mongoose.SchemaTypes.String,
         required: true
     },
-    beginner: {
+    turn: {
         type: mongoose.SchemaTypes.String,
         required: false,
         default: null

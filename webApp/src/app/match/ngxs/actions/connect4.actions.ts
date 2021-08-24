@@ -17,5 +17,5 @@ export class SetGameOver {
 
 export class StartNewGame {
     static readonly type = '[Connect4] New game start';
-    constructor() {}
+    constructor(public matchId: string) {}
 }

@@ -56,4 +56,6 @@ export class MatchComponent implements OnInit, OnDestroy {
         this.themingSubscription.unsubscribe();
     }
 
+    //TODO: funzione per negare l'accesso all'utente se volesse accedere alla pagina (se il match è finito)
+
 }

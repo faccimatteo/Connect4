@@ -37,8 +37,8 @@ export class BannerInfoComponent implements OnInit {
         this.connect4Service.receiveMatchData(this.matchcomponent.id, response.player1, response.player2)
         this.translations.player1 += this.connect4Service.get_player1();
         this.translations.player2 += this.connect4Service.get_player2();
-        this.connect4State.receiveMatchData(this.matchcomponent.id, response.player1, response.player2)
-        console.log(this.translations.player1, this.translations.player2)
+
+
         // We got all the info that we needed now we can start the match
         this.connect4Service.diskAddedSubject.subscribe(({ byPlayerIndex }) => {
           if (!this.isGameOver) {

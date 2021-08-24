@@ -35,7 +35,7 @@ export class Connect4Service {
   // We are sure that we have already received all the data from match at this point
   public newGame(): void {
 
-      this.store.dispatch(new StartNewGame());
+      this.store.dispatch(new StartNewGame(this.matchId));
       //this.gameStatusSubject.next({ status: 'newGame' });
   }
 
