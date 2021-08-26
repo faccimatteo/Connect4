@@ -24,7 +24,8 @@ export class FriendshipRequestsComponent implements OnInit {
   acceptPlayer(username:string):void{
     this.clientHttp.accept_user(username).subscribe(()=>{
       this._snackBar.open('Richiesta di ' + username + ' acettata', '' , {duration: 3000});
-
+      // After we accepted we delete the user from the list
+      delete this.friendRequests[this.friendRequests.indexOf(username)]
       // After the operation we reload the page
       this.ngOnInit()
     })
@@ -33,7 +34,8 @@ export class FriendshipRequestsComponent implements OnInit {
   rejectPlayer(username:string):void{
     this.clientHttp.reject_user(username).subscribe(()=>{
       this._snackBar.open('Richiesta di ' + username + ' rifiutata', '' , {duration: 3000});
-
+      // After we accepted we delete the user from the list
+      delete this.friendRequests[this.friendRequests.indexOf(username)]
       // After the operation we reload the page
       this.ngOnInit()
     })

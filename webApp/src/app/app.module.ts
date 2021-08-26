@@ -7,7 +7,7 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 import { BubbleMenuComponent } from "./bubble-menu/bubble-menu.component";
-import { ChatComponent } from "./chat/chat.component";
+import { ChatComponent } from "./match/modules/connect4/components/chat/chat.component";
 import { FriendsListComponent } from "./friends-list/friends-list.component";
 import { FriendshipRequestsComponent } from "./friendship-requests/friendship-requests.component";
 import { HomeComponent } from "./home/home.component";
@@ -42,8 +42,7 @@ import { StatsComponent } from "./stats/stats.component";
     FriendshipRequestsComponent,
     ManageUsersComponent,
     SearchMatchesComponent,
-    MatchesListComponent,
-    ChatComponent
+    MatchesListComponent
   ],
   imports: [
     BrowserModule,
@@ -52,7 +51,6 @@ import { StatsComponent } from "./stats/stats.component";
     ReactiveFormsModule,
     LayoutModule,
     HttpClientModule,
-    FormsModule,
     MatchModule
   ],
   providers: [],

@@ -58,10 +58,6 @@ export class SearchMatchesComponent implements OnInit {
         }
       );
       this.pairUser();
-      this.snackBarRef.afterDismissed().subscribe(() => {
-        this.clientHttp.setLookingForAMatch(false).subscribe(() => {
-        })
-      });
       })
 
   }
@@ -70,7 +66,6 @@ export class SearchMatchesComponent implements OnInit {
 
     this.clientHttp.pairForAMatch().subscribe((response) => {
 
-      //this.clientHttp.get_profile_pic(response.user.username).subscribe((res) => {
       // We found a user to play with
       if(response.user != null){
         console.log("match has been created")
@@ -92,7 +87,7 @@ export class SearchMatchesComponent implements OnInit {
       }
       else if(!this.matchFound)
         setTimeout(()=>{this.pairUser()}, this.timeoutResearch)
-      //})
+
     })
   }
 
@@ -106,6 +101,7 @@ export class SearchMatchesComponent implements OnInit {
 
     dialogRef.afterOpened().subscribe(() => {
       setTimeout(() => {
+        this.matchFound = true;
         this.snackBarRef.dismiss();
         dialogRef.close();
         this.router.navigate(['match', matchId])

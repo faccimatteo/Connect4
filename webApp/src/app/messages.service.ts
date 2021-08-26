@@ -20,11 +20,12 @@ export class MessagesService {
 
   constructor(private http:HttpClient, private clientHttp:ClientHttpService) { }
 
-  send_message_to_global(message:string, channelname:string):Observable<any>{
+  send_message_to_global(message:string, id:string, type:string):Observable<any>{
 
     return this.http.post(this.clientHttp.url + '/messages',{
       message: message,
-      type: channelname
+      id: id,
+      type: type
     }, this.options)
   }
 }

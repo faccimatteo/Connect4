@@ -90,21 +90,8 @@ export class MatchesService {
     );
   }
 
-  setMatchWon(matchId:string, username:string){
-    return this.http.post(this.url + '/matches/' + matchId + '/setWinner/' + username, {
-      matchId: matchId
-    }, this.logged).pipe(
-      tap((response) => {
-        response
-      }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
-    );
-  }
-
   setMatchDrawn(matchId:string){
-    return this.http.post(this.url + '/matches/' + matchId + '/setDraw', {
-      matchId: matchId
-    }, this.logged).pipe(
+    return this.http.get(this.url + '/matches/' + matchId + '/setDraw', this.logged).pipe(
       tap((response) => {
         response
       }),
@@ -112,9 +99,18 @@ export class MatchesService {
     );
   }
 
-  setMatchLoss(matchId:string, username:string){
-    return this.http.post(this.url + '/matches/' + matchId + '/setLoser/' + username, {
-      matchId: matchId
+  setMatchLoss(matchId:string){
+    return this.http.get(this.url + '/matches/' + matchId + '/setLoser', this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+    );
+  }
+
+  communicateLoss(matchId:string){
+    return this.http.post(this.url + '/communicateLoss', {
+      matchId:matchId
     }, this.logged).pipe(
       tap((response) => {
         response

@@ -718,7 +718,7 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
           // The users are checked, now we can correctly insert the match
           const players = [req.body.player1, req.body.player2];
           
-          if(req.body.winner != null){
+          if(req.body.winner != null || req.body.loser != null){
             if(players.includes(req.body.winner)){
             
               match.getModel().create({
@@ -727,6 +727,7 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
                 turn: null,
                 spectators: req.body.spectators,
                 winner: req.body.winner,
+                loser: req.body.loser,
                 ended: true
               
               }).then((matchCreated)=>{
@@ -745,7 +746,8 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
               player2: req.body.player2,
               turn: players[index],
               spectators: [],
-              winner: undefined,
+              winner: null,
+              loser: null,
               ended: false
             }).then((matchCreated)=>{
               return res.status(200).json({message:'New match correctly added', id: matchCreated._id, match: matchCreated});
@@ -968,45 +970,6 @@ app.delete("/matches/:id/:username", auth, (req,res,next) => {
   })
 });
 
-// TODO: we need to make secure this get request
-// Set the winner of the match
-app.get("/matches/:id/setWinner/:username", auth, (req,res,next) => {
-  
-  const myId = mongoose.Types.ObjectId(req.params.id);
-  // Looking for a certain match
-  match.getModel().findOne({_id:myId}).then((result)=>{
-    
-    if(result == null)
-      return next({ statusCode:404, error: true, errormessage: "The match is not present inside the DB"});
-    else{
-
-      // Checking if players are inserted into a DB
-      match.getModel().findOne({_id:myId}).select({player1:1,playe2:1}).then((result)=>{
-        const players = [String(result.player1), String(result.player2)]
-          if(!players.includes(String(req.params.username)))
-            return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
-          else{
-            // If the control flow pass, set the winner of the match
-            match.getModel().updateOne({ _id: myId}, { $set: { winner:  req.params.username} }).then(()=>{
-              user.getModel().findOne({username:req.params.username}).select({win:1}).then((result)=>{
-                var updated_wins_number:number = result.win + 1;
-                user.getModel().updateOne({username:req.params.username}, { $set: { win:updated_wins_number }}).then(()=>{
-                  return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
-                })
-              })
-            }).catch((reason)=>{
-                return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-            });
-          }
-        }).catch((reason)=>{
-            return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-        });    
-      
-    }
-  })
-  
-})
-
 // Return who is allowed to do the next move
 app.get("/matches/:id/turn", auth, (req,res,next) => {
   
@@ -1046,7 +1009,7 @@ app.get("/matches/:id/setDraw", auth, (req,res,next) => {
 
       // Checking if players are inserted into a DB
       match.getModel().findOne({_id:myId}).select({player1:1,playe2:1}).then((result)=>{
-        const players = [String(result.player1), String(result.player2)]
+        const players = [result.player1, result.player2]
           
           // If the control flow pass, set the winner of the match
           match.getModel().updateOne({ _id:myId}, { $set: { winner: null, ended: true} }).then(()=>{
@@ -1073,9 +1036,8 @@ app.get("/matches/:id/setDraw", auth, (req,res,next) => {
   })
 })
 
-// TODO: we need to make secure this get request
 // Set the loser of the match
-app.get("/matches/:id/setLoser/:username", auth, (req,res,next) => {
+app.get("/matches/:id/setLoser", auth, (req,res,next) => {
     
   const myId = mongoose.Types.ObjectId(req.params.id);
   // Looking for a certain match
@@ -1086,26 +1048,49 @@ app.get("/matches/:id/setLoser/:username", auth, (req,res,next) => {
     else{
 
       // Checking if players are inserted into a DB
-      match.getModel().findOne({_id:myId}).select({player1:1,playe2:1}).then((result)=>{
-        const players = [String(result.player1), String(result.player2)]
-          if(!players.includes(String(req.params.username)))
-            return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
+      match.getModel().findOne({_id:myId}).select({}).then((result)=>{
+        if(result.ended){
+          return next({ statusCode:404, error: true, errormessage: "Cannot set winner/loser of a match aready ended"});
+        }
+        else{
+          const players = [result.player1, result.player2]
+          
+          // getting other player in match
+          const opponent = players[players.indexOf(req.user.username) == 1 ? 0 : 1];
+
+          if(!players.includes(req.user.username))
+            return res.status(200).json({message:"The user you are trying to insert is not present into the db or is not equal to one of the two match's players."});
           else{
-            // If the control flow pass, set the loser of the match
-            match.getModel().updateOne({ _id: myId}, { $set: { loser:  req.params.username} }).then(()=>{
-              user.getModel().findOne({username:req.params.username}).select({loss:1}).then((result)=>{
-                var updated_loss_number:number = result.loss + 1;
-                user.getModel().updateOne({username:req.params.username}, { $set: { loss:updated_loss_number }}).then(()=>{
-                  return res.status(200).json('Loser ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
-                })
+            // incrementing user losses
+            user.getModel().updateOne({username:req.user.username}, { $inc: { loss: 1 }}, (err) =>{
+              if(err != null)
+                return next({statusCode:err.code, error: true, errormessage: "DB error: " + err});
+              else{
+                // incrementing user wins
+                user.getModel().updateOne({username:opponent}, { $inc: { win: 1 }}, (err)=>{
+                  // If the control flow pass, set the loser of the match, set the match winner, the match is ended and make the turn null
+                  if(err != null)
+                    return next({statusCode:err.code, error: true, errormessage: "DB error: " + err});
+                  else{
+                    match.getModel().updateOne({ _id: myId}, {$set: {loser: req.user.username, winner: opponent, ended: true, turn:null}}, (err)=>{
+                      if(err != null)
+                        return next({statusCode:err.code, error: true, errormessage: "DB error: " + err});
+                      else {
+                        return res.status(200).json({
+                          message:'Winner ' + opponent + ' of match ' + req.params.id + ' setted correcty.\n Loser ' + req.user.username + ' of match ' + req.params.id + ' setted correcty.'});                            
+                      }
+                    
+                  });
+                }
               })
-            }).catch((reason)=>{
-                return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-            });
+              }
+            })
           }
-        }).catch((reason)=>{
-            return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
-        });    
+        }
+        
+      }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+      });    
       
     }
   })
@@ -1125,11 +1110,11 @@ app.get("/matches/:id/loser", auth, (req,res,next) => {
 
 // Pusher chat API
 app.post("/messages", auth, (req,res,next) => {
-  if(req.body.message == null || req.body.type == null){
-    return next({ statusCode:404, error: true, errormessage: "Body must contain message and type fields"});
+  if(req.body.message == null || req.body.id == null || req.body.type == null){
+    return next({ statusCode:404, error: true, errormessage: "Body must contain message, id and type fields"});
   }else{
 
-    pusher.trigger("chat" + req.body.type, "message", {
+    pusher.trigger("chat" + req.body.id + req.body.type, "message", {
       username: req.user.username,
       message: req.body.message
     });
@@ -1169,10 +1154,9 @@ app.post("/matchFound", auth, (req,res,next) => {
   
 })
 
-// Pusher Connect4 API
+// Pusher Connect4 API to make a move
 app.post("/doMove", auth, (req,res,next) => {
   
-  // We use session field too to avoid user making unauthorized requests
   if(req.body.matchId == null || req.body.columnIndex == null)
     return next({ statusCode:404, error: true, errormessage: "Body must contain matchId and columnIndex fields"});
   else{
@@ -1209,6 +1193,41 @@ app.post("/doMove", auth, (req,res,next) => {
               })
             }
           }
+        }
+      }
+    }).catch((error) => {
+      return next({statusCode:error.code, error: true, errormessage: "Cannot connect to DB."});
+    })
+  }
+})
+
+// Pusher Connect4 API to communicate the loss
+app.post("/communicateLoss", auth, (req,res,next) => {
+  
+  if(req.body.matchId == null)
+    return next({ statusCode:404, error: true, errormessage: "Body must contain matchId and columnIndex fields"});
+  else{
+    match.getModel().findById(req.body.matchId, (err, result) => {
+      if(err != null)
+        return next({statusCode:err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB."});
+      else{
+        const allowed_players = [result.player1, result.player2];
+        // Checking if player is allowed 
+        if(!allowed_players.includes(req.user.username)){
+          return next({ statusCode:404, error: true, errormessage: "User " + req.user.username + " is not allowed to play the game"});
+        }
+        else{
+          
+          // Sending event trigger on pusher 
+          pusher.trigger(req.body.matchId, "communicateLoss", {
+            winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0:1],
+            loser: req.user.username
+          });
+          return res.status(200).json({
+            message:"User " + req.user.username + " has declared his loss",
+            winner:allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0:1],
+            loser:req.user.username
+          });
         }
       }
     }).catch((error) => {

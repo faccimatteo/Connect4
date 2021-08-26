@@ -72,15 +72,15 @@ var userSchema = new Schema<User>( {
         required: false 
     },
     win: {
-        type: mongoose.SchemaTypes.String,
+        type: mongoose.SchemaTypes.Number,
         required: true 
     },
     loss: {
-        type: mongoose.SchemaTypes.String,
+        type: mongoose.SchemaTypes.Number,
         required: true 
     },
     draw: {
-        type: mongoose.SchemaTypes.String,
+        type: mongoose.SchemaTypes.Number,
         required: true 
     },
     friends:    {

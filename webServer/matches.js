@@ -16,7 +16,6 @@ var matchSchema = new mongoose_1.Schema({
     turn: {
         type: mongoose.SchemaTypes.String,
         required: false,
-        default: null
     },
     spectators: [{
             type: mongoose.SchemaTypes.Mixed,
@@ -24,11 +23,11 @@ var matchSchema = new mongoose_1.Schema({
         }],
     winner: {
         type: mongoose.SchemaTypes.String,
-        required: false
+        required: false,
     },
     loser: {
         type: mongoose.SchemaTypes.String,
-        required: false
+        required: false,
     },
     ended: {
         type: mongoose.SchemaTypes.Boolean,

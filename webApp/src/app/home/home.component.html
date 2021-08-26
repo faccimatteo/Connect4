@@ -1,9 +1,9 @@
-<div *ngIf="is_allowed()" class='container'>
+<div *ngIf="this.app.is_allowed()" class='container'>
   <app-bubble-menu></app-bubble-menu>
   <app-chat id="global"></app-chat>
   <app-search-matches></app-search-matches>
 </div>
-<div *ngIf="!is_allowed()">
+<div *ngIf="!this.app.is_allowed()">
   <app-login></app-login>
 </div>
 

@@ -71,7 +71,6 @@ export class BannerInfoComponent implements OnInit {
         }>((state: AppState) => ({
             playerIndex: state.connect4.playerPlaying,
         }));
-        console.log(playerIndex)
         const { yourTurn } = this.translations;
         this.updatePlayerSection(playerIndex);
         this.playerStatusLabel = yourTurn;

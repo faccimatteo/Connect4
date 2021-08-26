@@ -1,12 +1,14 @@
 <div id='container'>
-  <mat-card *ngIf="!this.isEnded">
-    <app-banner-info></app-banner-info>
-    <app-board></app-board>
-    <button mat-stroked-button onclick="openDialog()">Lascia la partita</button>
-  </mat-card>
-  <mat-card>
-    <!--<app-chat id={{this.id}}></app-chat>-->
-  </mat-card>
+  <div *ngIf="!this.isEnded">
+    <mat-card>
+      <app-banner-info></app-banner-info>
+      <app-board></app-board>
+      <button mat-raised-button (click)="openDialog()">Lascia la partita</button>
+    </mat-card>
+    <mat-card>
+      <app-chat id="{{this.id}}"></app-chat>
+    </mat-card>
+  </div>
   <mat-card *ngIf="this.isEnded">
     <mat-card-content>Questo match è terminato, cercane per trovarne uno nuovo!</mat-card-content>
   </mat-card>

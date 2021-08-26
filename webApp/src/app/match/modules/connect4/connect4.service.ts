@@ -36,7 +36,11 @@ export class Connect4Service {
       this.matches.getPlayers(this.matchId).subscribe((res) => {
         this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
         this.gameStatusSubject.next({ status: 'gameOver' });
-        console.log(res.players[gameFinishInfo.byPlayer-1])
+
+        // The player defeated update the status of the match
+        if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
+          this.defeat();
+        }
       })
 
   }
@@ -49,12 +53,14 @@ export class Connect4Service {
         cluster: 'eu'
       });
       this.channel = this.pusher.subscribe(this.matchId);
+
+      // Listening on the channel waiting for the next move
       this.channel.bind('nextMove', (data) => {
         this.matches.getPlayers(this.matchId).subscribe((response) => {
           // We check if we actually need to update our board status (because if we are the sender of the event we don't actually need to update that)
           if(response.players[data.playerIndex] != this.clientHttp.get_username()){
-            const availableSlotIndex = this.findAvailableSlot(data.columnIndex)
-            const byPlayerIndex = data.playerIndex === 1 ? 2: 1
+            const availableSlotIndex = this.findAvailableSlot(data.columnIndex);
+            const byPlayerIndex = data.playerIndex === 1 ? 2: 1;
             this.store.dispatch(new UpdateBoard(availableSlotIndex, byPlayerIndex));
             // We need to convert the index of the player in PlayerIndex
             // We received the move from the opponent so we have to change byPlayerIndex
@@ -63,6 +69,28 @@ export class Connect4Service {
           }
         })
       })
+
+      // Listening on the channel waiting for opponent to exit from the game
+      this.channel.bind('communicateLoss', (data) => {
+        this.matches.getPlayers(this.matchId).subscribe((response) => {
+
+
+          const playerIndex = response.players.indexOf(data.loser);
+          // Dispatching of GameOver event passing the index of the defeated user
+          const fakeIndex: number[] = []
+          this.store.dispatch(new SetGameOver(playerIndex, fakeIndex));
+
+          console.log(data.winner);
+          console.log(data.loser);
+        })
+      })
+
+      // Listening on the channel waiting for a spectator to connect
+      this.channel.bind('startedObserving', (data) => {
+
+      })
+
+
       //this.gameStatusSubject.next({ status: 'newGame' });
   }
 
@@ -104,7 +132,6 @@ export class Connect4Service {
       return availableSlotIndex;
   }
 
-  // TODO: we have to insert a win in the db
   public checkGameFinished(): null | GameOverInfo {
       const boardSnapshot = this.store.selectSnapshot<Connect4Board>(
           (state: AppState) => state.connect4.currentBoard
@@ -237,8 +264,10 @@ export class Connect4Service {
           this.player2 = player2;
     }
 
-    public registerStats(){
-      //
+    defeat(){
+      this.matches.setMatchLoss(this.matchId).subscribe(() => {
+        console.log("win/loss registered")
+      })
     }
 
 }

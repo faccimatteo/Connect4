@@ -1,7 +1,9 @@
 <h1 mat-dialog-title>{{data.username}}, sei sicuro di voler uscire?</h1>
 <div mat-dialog-content>
   Se uscirai perderai la partita, continuare?
-  <div mat-dialog-actions>
-    <button mat-stroked-button cdkFocusInitial>Esci</button>
-  </div>
 </div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Annulla</button>
+  <button mat-button (click)="onQuit()" cdkFocusInitial>Esci</button>
+</div>
+

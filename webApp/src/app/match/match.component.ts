@@ -12,7 +12,8 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { ClientHttpService } from '../client-http.service';
 
 export interface MatchDialogData {
-  username: string
+  username: string,
+  matchId: string
 }
 
 @Component({
@@ -25,27 +26,26 @@ export class MatchComponent implements OnInit, OnDestroy {
   public id:string = this.route.snapshot.paramMap.get('id');
   themingSubscription!: Subscription;
   public isEnded: Boolean = false;
+  private players: String[];
 
   constructor(
-      private store: Store,
       private themingService: ThemingService,
-      private appSettingsService: AppSettingsService,
       private connect4Service: Connect4Service,
-      private audioService: AudioService,
       private route: ActivatedRoute,
       private matches: MatchesService,
       private dialog: MatDialog,
-      private router: Router,
-      private clientHttp: ClientHttpService
+      private clientHttp: ClientHttpService,
+
   ) {}
   @HostBinding('class') public cssClass!: string;
 
   ngOnInit(): void {
+    // Checking observe parameter to see if it's needed to update to current ngxs configuration
     this.connect4Service.diskAddedSubject.subscribe(() => {
       const gameFinishInfo = this.connect4Service.checkGameFinished();
+
       if (gameFinishInfo !== null) {
           this.connect4Service.gameFinish(gameFinishInfo);
-
           // play audio
           //const hasIdentifiedWinner = gameFinishInfo.byPlayer !== null;
           //this.audioService.playAudio(hasIdentifiedWinner ? 'victory' : 'noWinner');
@@ -57,11 +57,11 @@ export class MatchComponent implements OnInit, OnDestroy {
     });
 
     this.matches.getMatchById(this.id).subscribe((response) => {
-      console.log(response.ended)
+      this.players = [response.player1, response.player2]
       this.isEnded = response.ended
-      this.connect4Service.newGame();
+      if(!this.isEnded)
+        this.connect4Service.newGame();
     })
-
 
   }
 
@@ -69,15 +69,14 @@ export class MatchComponent implements OnInit, OnDestroy {
       this.themingSubscription.unsubscribe();
   }
 
-  public openDialog(){
+  openDialog(){
     const dialogRef = this.dialog.open(MatchDialogData, {
-      data: {username: this.clientHttp.get_username()}
+      data: {
+        username: this.clientHttp.get_username(),
+        matchId: this.id
+      }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-      // We must update the stats of players
-      this.router.navigate(['/home'])
-    });
   }
 
 }
@@ -88,9 +87,24 @@ export class MatchComponent implements OnInit, OnDestroy {
 })
 export class MatchDialogData {
   constructor(public dialogRef: MatDialogRef<MatchDialogData>,
-    @Inject(MAT_DIALOG_DATA) public data: MatchDialogData) {}
+    @Inject(MAT_DIALOG_DATA) public data: MatchDialogData,
+    private router: Router,
+    private matches: MatchesService) {}
 
   onNoClick(): void {
     this.dialogRef.close();
   }
+
+  // Quit from the match and register the loss
+  onQuit(){
+    this.matches.setMatchLoss(this.data.matchId).subscribe(() => {
+      console.log("win/loss registered")
+      this.matches.communicateLoss(this.data.matchId).subscribe(() => {
+        console.log("comunicationLoss event sended")
+        this.dialogRef.close();
+        this.router.navigate(['/home'])
+      })
+    })
+  }
+
 }

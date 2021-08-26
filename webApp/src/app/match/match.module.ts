@@ -6,7 +6,7 @@ import { NgxsLoggerPluginModule } from '@ngxs/logger-plugin';
 import { NgxsModule } from '@ngxs/store';
 
 import { environment } from '../../environments/environment.prod';
-import { MatchComponent } from './match.component';
+import { MatchComponent, MatchDialogData } from './match.component';
 import { Connect4Module } from './modules/connect4/connect4.module';
 import { FooterModule } from './modules/footer/footer.module';
 import { HeaderModule } from './modules/header/header.module';
@@ -14,12 +14,14 @@ import { MaterialModule } from './modules/material/material.modules';
 import { SidenavModule } from './modules/sidenav/sidenav.module';
 import { ThemingService } from './shared/services/theming/theming.service';
 import RootState from './ngxs/state/root.state';
-import { ChatComponent } from '../chat/chat.component';
+import { ChatComponent } from './modules/connect4/components/chat/chat.component';
+import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
     declarations: [
-      MatchComponent
+      MatchComponent,
+      MatchDialogData
     ],
     imports: [
       BrowserModule,
@@ -36,7 +38,9 @@ import { ChatComponent } from '../chat/chat.component';
       MaterialModule
     ],
     exports: [
-      MaterialModule
+      MaterialModule,
+      ChatComponent,
+      FormsModule
     ],
     providers: [
       ThemingService
