@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialog, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import Pusher from 'pusher-js';
@@ -97,8 +97,7 @@ export class SearchMatchesComponent implements OnInit {
   }
 
   openDialog(username:string, matchId:string){
-    console.log("opened dialog")
-    let dialogRef = this.dialog.open(DialogDataExampleDialog, {
+    let dialogRef = this.dialog.open(DialogData, {
       data: {
         user: username,
         //picProfile:res.profilepic --> Not working inside dialog menu
@@ -121,6 +120,6 @@ export class SearchMatchesComponent implements OnInit {
   selector: 'dialog-data',
   templateUrl: './dialog-data.html',
 })
-export class DialogDataExampleDialog {
+export class DialogData {
   constructor(@Inject(MAT_DIALOG_DATA) public data: DialogData) {}
 }

@@ -613,7 +613,9 @@ app.route("/matches/:id").delete(auth, (req, res, next) => {
         // Checking if the document exists
         if (result == null)
             return next({ statusCode: 404, error: true, errormessage: "The match you are looking for is not present into the DB" });
-        return res.status(200).json(result);
+        else {
+            return res.status(200).json(result);
+        }
     }).catch((reason) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
@@ -745,43 +747,38 @@ app.delete("/matches/:id/:username", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
+// TODO: we need to make secure this get request
 // Set the winner of the match
 app.get("/matches/:id/setWinner/:username", auth, (req, res, next) => {
-    // Checking if the user that send the request is the admin user: just the admin user can register matches' winners.
-    if (req.user.username != 'admin') {
-        return next({ statusCode: 404, error: true, errormessage: "You are not authorized to set a winner/loser." });
-    }
-    else {
-        const myId = mongoose.Types.ObjectId(req.params.id);
-        // Looking for a certain match
-        match.getModel().findOne({ _id: myId }).then((result) => {
-            if (result == null)
-                return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
-            else {
-                // Checking if players are inserted into a DB
-                match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
-                    const players = [String(result.player1), String(result.player2)];
-                    if (players.includes(String(req.params.username)) == false)
-                        return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
-                    else {
-                        // If the control flow pass, set the winner of the match
-                        match.getModel().updateOne({ _id: myId }, { $set: { winner: req.params.username } }).then(() => {
-                            user.getModel().findOne({ username: req.params.username }).select({ win: 1 }).then((result) => {
-                                var updated_wins_number = result.win + 1;
-                                user.getModel().updateOne({ username: req.params.username }, { $set: { win: updated_wins_number } }).then(() => {
-                                    return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
-                                });
+    const myId = mongoose.Types.ObjectId(req.params.id);
+    // Looking for a certain match
+    match.getModel().findOne({ _id: myId }).then((result) => {
+        if (result == null)
+            return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
+        else {
+            // Checking if players are inserted into a DB
+            match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
+                const players = [String(result.player1), String(result.player2)];
+                if (!players.includes(String(req.params.username)))
+                    return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
+                else {
+                    // If the control flow pass, set the winner of the match
+                    match.getModel().updateOne({ _id: myId }, { $set: { winner: req.params.username } }).then(() => {
+                        user.getModel().findOne({ username: req.params.username }).select({ win: 1 }).then((result) => {
+                            var updated_wins_number = result.win + 1;
+                            user.getModel().updateOne({ username: req.params.username }, { $set: { win: updated_wins_number } }).then(() => {
+                                return res.status(200).json('Winner ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
                             });
-                        }).catch((reason) => {
-                            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
                         });
-                    }
-                }).catch((reason) => {
-                    return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                });
-            }
-        });
-    }
+                    }).catch((reason) => {
+                        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                    });
+                }
+            }).catch((reason) => {
+                return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+            });
+        }
+    });
 });
 // Return who is allowed to do the next move
 app.get("/matches/:id/turn", auth, (req, res, next) => {
@@ -804,46 +801,70 @@ app.get("/matches/:id/winner", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
-// TODO: implementare
+// TODO: we need to make secure this get request
 // Set the match drawn
-//app.get("/matches/:id/draw", auth, (req,res,next) => {
+app.get("/matches/:id/setDraw", auth, (req, res, next) => {
+    const myId = mongoose.Types.ObjectId(req.params.id);
+    // Looking for a certain match
+    match.getModel().findOne({ _id: myId }).then((result) => {
+        if (result == null)
+            return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
+        else {
+            // Checking if players are inserted into a DB
+            match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
+                const players = [String(result.player1), String(result.player2)];
+                // If the control flow pass, set the winner of the match
+                match.getModel().updateOne({ _id: myId }, { $set: { winner: null, ended: true } }).then(() => {
+                    user.getModel().updateOne({ username: result.player1 }, { $inc: { draw: 1 } }).then(() => {
+                        user.getModel().updateOne({ username: result.player2 }, { $inc: { draw: 1 } }).then(() => {
+                            return res.status(200).json({ message: 'Added draw to ' + result.player1 + ' and ' + result.player2 + ' then setted the match ' + myId + ' drawn.' });
+                        }).catch((err) => {
+                            return next({ statusCode: err.code, error: true, errormessage: "Couldn't update " + result.player1 + " stats" });
+                        });
+                    }).catch((err) => {
+                        return next({ statusCode: err.code, error: true, errormessage: "Couldn't update " + result.player1 + " stats" });
+                    });
+                }).catch((err) => {
+                    return next({ statusCode: err.code, error: true, errormessage: "DB error: " + err });
+                });
+            }).catch((err) => {
+                return next({ statusCode: err.code, error: true, errormessage: "DB error: " + err });
+            });
+        }
+    });
+});
+// TODO: we need to make secure this get request
 // Set the loser of the match
 app.get("/matches/:id/setLoser/:username", auth, (req, res, next) => {
-    // Checking if the user that send the request is the admin user: just the admin user can register matches' winners.
-    if (req.user.username != 'admin') {
-        return next({ statusCode: 404, error: true, errormessage: "You are not authorized to set a winner/loser." });
-    }
-    else {
-        const myId = mongoose.Types.ObjectId(req.params.id);
-        // Looking for a certain match
-        match.getModel().findOne({ _id: myId }).then((result) => {
-            if (result == null)
-                return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
-            else {
-                // Checking if players are inserted into a DB
-                match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
-                    const players = [String(result.player1), String(result.player2)];
-                    if (players.includes(String(req.params.username)) == false)
-                        return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
-                    else {
-                        // If the control flow pass, set the loser of the match
-                        match.getModel().updateOne({ _id: myId }, { $set: { loser: req.params.username } }).then(() => {
-                            user.getModel().findOne({ username: req.params.username }).select({ loss: 1 }).then((result) => {
-                                var updated_loss_number = result.loss + 1;
-                                user.getModel().updateOne({ username: req.params.username }, { $set: { loss: updated_loss_number } }).then(() => {
-                                    return res.status(200).json('Loser ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
-                                });
+    const myId = mongoose.Types.ObjectId(req.params.id);
+    // Looking for a certain match
+    match.getModel().findOne({ _id: myId }).then((result) => {
+        if (result == null)
+            return next({ statusCode: 404, error: true, errormessage: "The match is not present inside the DB" });
+        else {
+            // Checking if players are inserted into a DB
+            match.getModel().findOne({ _id: myId }).select({ player1: 1, playe2: 1 }).then((result) => {
+                const players = [String(result.player1), String(result.player2)];
+                if (!players.includes(String(req.params.username)))
+                    return res.status(200).json("The user you are trying to insert is not present into the db or is not equal to one of the two match's players.");
+                else {
+                    // If the control flow pass, set the loser of the match
+                    match.getModel().updateOne({ _id: myId }, { $set: { loser: req.params.username } }).then(() => {
+                        user.getModel().findOne({ username: req.params.username }).select({ loss: 1 }).then((result) => {
+                            var updated_loss_number = result.loss + 1;
+                            user.getModel().updateOne({ username: req.params.username }, { $set: { loss: updated_loss_number } }).then(() => {
+                                return res.status(200).json('Loser ' + req.params.username + ' of match ' + req.params.id + ' setted correcty.');
                             });
-                        }).catch((reason) => {
-                            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
                         });
-                    }
-                }).catch((reason) => {
-                    return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                });
-            }
-        });
-    }
+                    }).catch((reason) => {
+                        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                    });
+                }
+            }).catch((reason) => {
+                return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+            });
+        }
+    });
 });
 // We want to know the loser of a match
 app.get("/matches/:id/loser", auth, (req, res, next) => {

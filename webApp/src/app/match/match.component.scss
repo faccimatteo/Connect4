@@ -10,3 +10,21 @@ main {
 app-board {
     min-height: 55vh;
 }*/
+
+@media screen and (min-width:641px){
+  #container {
+    margin-top: 2%;
+    margin-left: 10%;
+    margin-right: 10%;
+  }
+
+}
+
+@media screen and (max-width:720px){
+  #container {
+    margin-top: 50%;
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+}
+

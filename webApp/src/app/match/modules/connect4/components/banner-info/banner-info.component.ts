@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { ClientHttpService } from 'src/app/client-http.service';
 import { MatchComponent } from 'src/app/match/match.component';
 import { MatchesService } from 'src/app/matches.service';
 
@@ -31,15 +30,15 @@ export class BannerInfoComponent implements OnInit {
     constructor(private store: Store, private connect4Service: Connect4Service, private matches:MatchesService, private matchcomponent:MatchComponent,  private connect4State: Connect4State) {}
 
     ngOnInit(){
-      this.playingPlayerIndex = 1;
+
       this.matches.getMatchById(this.matchcomponent.id).subscribe((response) => {
 
         this.connect4Service.receiveMatchData(this.matchcomponent.id, response.player1, response.player2)
-        this.translations.player1 += this.connect4Service.get_player1();
-        this.translations.player2 += this.connect4Service.get_player2();
+        this.translations.player1 += response.player1;
+        this.translations.player2 += response.player2;
 
 
-        // We got all the info that we needed now we can start the match
+        // This is the callback that we call when a move is made by us
         this.connect4Service.diskAddedSubject.subscribe(({ byPlayerIndex }) => {
           if (!this.isGameOver) {
               const nextPlayer = byPlayerIndex === 1 ? 2 : 1;
@@ -53,42 +52,30 @@ export class BannerInfoComponent implements OnInit {
           }
         })
         // We need to start the game before initializing the content on the board with initialize()
-        this.newGame();
+        this.connect4Service.newGame();
         this.initialize();
       });
 
     }
 
     private updatePlayerSection(pIndex: PlayerIndex): void {
-        const { player1, player2 } = this.translations;
-        const { player} = this.store.selectSnapshot<{
-            player: string | null;
-        }>((state: AppState) => ({
-            player: state.connect4.player
-        }));
 
-        this.playerNameLabel = player === player1 ? player1 : player2;
-        this.playingPlayerIndex = pIndex;
-        /*old one
         const { player1, player2 } = this.translations;
         this.playerNameLabel = pIndex === 1 ? player1 : player2;
-        this.playingPlayerIndex = pIndex;*/
+        this.playingPlayerIndex = pIndex;
     }
 
     private initialize(): void {
-        const { playerIndex, isGameOver } = this.store.selectSnapshot<{
+        const { playerIndex } = this.store.selectSnapshot<{
             playerIndex: PlayerIndex | null;
-            isGameOver: boolean;
         }>((state: AppState) => ({
             playerIndex: state.connect4.playerPlaying,
-            isGameOver: state.connect4.gameOver
         }));
+        console.log(playerIndex)
         const { yourTurn } = this.translations;
-
         this.updatePlayerSection(playerIndex);
         this.playerStatusLabel = yourTurn;
         this.gameOverLabel = null;
-        this.isGameOver = isGameOver;
     }
 
     private displayGameOver(): void {
@@ -116,7 +103,4 @@ export class BannerInfoComponent implements OnInit {
         }
     }
 
-    public newGame(): void {
-        this.connect4Service.newGame();
-    }
 }

@@ -32,29 +32,34 @@ export class Connect4Service {
   }
 
   public gameFinish(gameFinishInfo: GameOverInfo): void {
-      this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved, gameFinishInfo.winnerPlayer));
-      this.gameStatusSubject.next({ status: 'gameOver' });
+
+      this.matches.getPlayers(this.matchId).subscribe((res) => {
+        this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
+        this.gameStatusSubject.next({ status: 'gameOver' });
+        console.log(res.players[gameFinishInfo.byPlayer-1])
+      })
+
   }
 
   // We are sure that we have already received all the data from match at this point
   public newGame(): void {
       this.store.dispatch(new StartNewGame(this.matchId));
       // We create the channel and we subscribe on it
-      console.log("connected to pusher")
       this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
         cluster: 'eu'
       });
       this.channel = this.pusher.subscribe(this.matchId);
-      console.log("subscribed to channel")
       this.channel.bind('nextMove', (data) => {
-        console.log("Update board from remote move request")
         this.matches.getPlayers(this.matchId).subscribe((response) => {
           // We check if we actually need to update our board status (because if we are the sender of the event we don't actually need to update that)
-          console.log("against " + response.players[data.playerIndex])
-          console.log("you " + this.clientHttp.get_username())
           if(response.players[data.playerIndex] != this.clientHttp.get_username()){
-            const availableSlotIndex = data.columnIndex
-            this.store.dispatch(new UpdateBoard(availableSlotIndex, data.playerIndex, this.clientHttp.get_username()));
+            const availableSlotIndex = this.findAvailableSlot(data.columnIndex)
+            const byPlayerIndex = data.playerIndex === 1 ? 2: 1
+            this.store.dispatch(new UpdateBoard(availableSlotIndex, byPlayerIndex));
+            // We need to convert the index of the player in PlayerIndex
+            // We received the move from the opponent so we have to change byPlayerIndex
+            this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: byPlayerIndex });
+
           }
         })
       })
@@ -63,7 +68,7 @@ export class Connect4Service {
 
   public findAvailableSlot(columnIndex: number){
     const board = this.store.selectSnapshot<Connect4Board>((state: AppState) => state.connect4.currentBoard);
-      let availableSlotIndex = null;
+      let availableSlotIndex = null; //dovrebbe essere null poiché potrebbero non esserci delle colonne vuote*/
       const { nbColumns } = connect4;
 
       // find an available slot in the selected column
@@ -79,18 +84,21 @@ export class Connect4Service {
 
   }
 
-  public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex, player: string ): null | number {
+  public addDiskInColumn(columnIndex: number, playerIndex: PlayerIndex): null | number {
       const availableSlotIndex = this.findAvailableSlot(columnIndex)
 
       if (availableSlotIndex !== null) {
-          // update store
-          this.store.dispatch(new UpdateBoard(availableSlotIndex, playerIndex, player));
-          // emit event at all the subscribed componenets
-          this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: playerIndex });
-          // We send in chanel that we have done the move
-          this.matches.makeMove(columnIndex, this.matchId).subscribe(() => {
-            console.log("data sent from " + this.clientHttp.get_username() + " via pusher")
-          })
+
+        // update store
+        this.store.dispatch(new UpdateBoard(availableSlotIndex, playerIndex));
+
+        // emit event at all the subscribed componenets
+        this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: playerIndex });
+
+        // We send in channel that we have done the move
+        this.matches.makeMove(columnIndex, this.matchId).subscribe(() => {
+
+        })
       }
 
       return availableSlotIndex;
@@ -101,6 +109,7 @@ export class Connect4Service {
       const boardSnapshot = this.store.selectSnapshot<Connect4Board>(
           (state: AppState) => state.connect4.currentBoard
       );
+      console.log(boardSnapshot)
       const result = this.winConditionsArray.filter((winArr) => {
           return (
               boardSnapshot[winArr[0]] !== null &&
@@ -115,7 +124,6 @@ export class Connect4Service {
           return {
               winConditionResolved: null,
               byPlayer: null,
-              winnerPlayer: null
           };
       }
 
@@ -129,7 +137,7 @@ export class Connect4Service {
 
         })
 
-        return { winConditionResolved: result[0], byPlayer: boardSnapshot[result[0][0]] as 1 | 2, winnerPlayer:matchPlayers[playerIndex-1]}
+        return { winConditionResolved: result[0], byPlayer: boardSnapshot[result[0][0]] as 1 | 2}
       }else
         return null;
   }
@@ -229,11 +237,8 @@ export class Connect4Service {
           this.player2 = player2;
     }
 
-    public get_player1(){
-      return this.player1;
+    public registerStats(){
+      //
     }
 
-    public get_player2(){
-      return this.player2;
-    }
 }

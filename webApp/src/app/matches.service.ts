@@ -90,6 +90,37 @@ export class MatchesService {
     );
   }
 
+  setMatchWon(matchId:string, username:string){
+    return this.http.post(this.url + '/matches/' + matchId + '/setWinner/' + username, {
+      matchId: matchId
+    }, this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+    );
+  }
 
+  setMatchDrawn(matchId:string){
+    return this.http.post(this.url + '/matches/' + matchId + '/setDraw', {
+      matchId: matchId
+    }, this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+    );
+  }
+
+  setMatchLoss(matchId:string, username:string){
+    return this.http.post(this.url + '/matches/' + matchId + '/setLoser/' + username, {
+      matchId: matchId
+    }, this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+    );
+  }
 
 }

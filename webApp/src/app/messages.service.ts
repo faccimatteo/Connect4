@@ -20,14 +20,11 @@ export class MessagesService {
 
   constructor(private http:HttpClient, private clientHttp:ClientHttpService) { }
 
-  send_message_to_global(message:string):Observable<any>{
+  send_message_to_global(message:string, channelname:string):Observable<any>{
 
     return this.http.post(this.clientHttp.url + '/messages',{
       message: message,
-      type: "global"
+      type: channelname
     }, this.options)
   }
-
-  // Implements all the others possibile chats
-
 }

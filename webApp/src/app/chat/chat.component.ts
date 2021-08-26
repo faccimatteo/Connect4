@@ -1,4 +1,4 @@
-import { Component, Injectable, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import Pusher from 'pusher-js';
 import { ClientHttpService } from '../client-http.service';
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
@@ -42,7 +42,7 @@ export class ChatComponent implements OnInit {
 
   submit():void{
 
-    this.messagesService.send_message_to_global(this.message)
+    this.messagesService.send_message_to_global(this.message, this.id)
     .subscribe(
       ()=>{
         this.message = '';

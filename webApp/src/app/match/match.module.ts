@@ -14,26 +14,33 @@ import { MaterialModule } from './modules/material/material.modules';
 import { SidenavModule } from './modules/sidenav/sidenav.module';
 import { ThemingService } from './shared/services/theming/theming.service';
 import RootState from './ngxs/state/root.state';
+import { ChatComponent } from '../chat/chat.component';
+
 
 @NgModule({
     declarations: [
       MatchComponent
     ],
     imports: [
-        BrowserModule,
-        BrowserAnimationsModule,
-        Connect4Module,
-        HeaderModule,
-        SidenavModule,
-        MaterialModule,
-        FooterModule,
-        NgxsModule.forRoot([...RootState], {
-            developmentMode: !environment.production
-        }),
-        NgxsReduxDevtoolsPluginModule.forRoot(),
-        NgxsLoggerPluginModule.forRoot()
+      BrowserModule,
+      BrowserAnimationsModule,
+      Connect4Module,
+      HeaderModule,
+      SidenavModule,
+      FooterModule,
+      NgxsModule.forRoot([...RootState], {
+          developmentMode: !environment.production
+      }),
+      NgxsReduxDevtoolsPluginModule.forRoot(),
+      NgxsLoggerPluginModule.forRoot(),
+      MaterialModule
     ],
-    providers: [ThemingService],
+    exports: [
+      MaterialModule
+    ],
+    providers: [
+      ThemingService
+    ],
     bootstrap: [MatchComponent]
 })
 export class MatchModule {}
