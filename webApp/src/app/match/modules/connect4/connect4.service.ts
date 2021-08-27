@@ -57,7 +57,9 @@ export class Connect4Service {
       // Listening on the channel waiting for the next move
       this.channel.bind('nextMove', (data) => {
         this.matches.getPlayers(this.matchId).subscribe((response) => {
+
           // We check if we actually need to update our board status (because if we are the sender of the event we don't actually need to update that)
+
           if(response.players[data.playerIndex] != this.clientHttp.get_username()){
             const availableSlotIndex = this.findAvailableSlot(data.columnIndex);
             const byPlayerIndex = data.playerIndex === 1 ? 2: 1;
@@ -68,6 +70,33 @@ export class Connect4Service {
 
           }
         })
+      })
+
+      // If we are a spectator we need to request the current board configuration
+      this.matches.getPlayers(this.matchId).subscribe((response) => {
+        if(!response.players.includes(this.clientHttp.get_username())){
+          console.log("dentro a send state")
+          this.channel.bind('sendState', (data) => {
+            // We received the configuration from the players
+            console.log("the configuration has been received from the players")
+          })
+          // Listening on the channel waiting for a spectator to connect
+          this.matches.requestState(this.matchId).subscribe(() => {
+          })
+
+        }
+        // For efficiency we make that just the first player serve the requests
+        else if (this.clientHttp.get_username() == response.players[0]){
+          console.log("dentro a request state")
+          // Listening on the channel waiting for a configuration from the
+          this.channel.bind('requestState', (data) => {
+            // We need to send the configuration to the users
+            console.log("a user requested match state")
+            this.matches.sendState(this.matchId).subscribe(() => {
+              console.log("Configuration sent")
+            })
+          })
+        }
       })
 
       // Listening on the channel waiting for opponent to exit from the game
@@ -85,10 +114,10 @@ export class Connect4Service {
         })
       })
 
-      // Listening on the channel waiting for a spectator to connect
-      this.channel.bind('startedObserving', (data) => {
 
-      })
+
+
+
 
 
       //this.gameStatusSubject.next({ status: 'newGame' });

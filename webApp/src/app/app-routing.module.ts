@@ -6,6 +6,7 @@ import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './login/login.component';
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { MatchComponent } from './match/match.component';
+import { MatchesListComponent } from './matches-list/matches-list.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
 import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
@@ -19,6 +20,7 @@ const routes: Routes = [
   { path: 'home/stats', component: StatsComponent },
   { path: 'home/friends', component: FriendsListComponent },
   { path: 'home/searchFriends', component: SearchFriendsComponent },
+  { path: 'home/matchList', component: MatchesListComponent },
   { path: 'friendshipRequests', component: FriendshipRequestsComponent },
   { path: 'manageUsers', component: ManageUsersComponent },
   { path: 'match/:id', component: MatchComponent },

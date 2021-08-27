@@ -25,7 +25,7 @@ export class SearchMatchesComponent implements OnInit {
   private snackBarRef;
   private pusher;
   private channel;
-  private matchFound: boolean = false;
+  private searching: boolean = true;
 
   constructor(private clientHttp: ClientHttpService, private _snackBar: MatSnackBar, private dialog:MatDialog, private router:Router, private matches:MatchesService) {
     // Using Pusher to communicate user that match has been found
@@ -37,7 +37,8 @@ export class SearchMatchesComponent implements OnInit {
   ngOnInit(){}
 
   searchMatch(){
-
+    // In case we close the search and search again it must me setted to true
+    this.searching = true;
     // Listening on a pusher channel
     this.channel = this.pusher.subscribe('lookingForAMatch');
 
@@ -45,20 +46,28 @@ export class SearchMatchesComponent implements OnInit {
     this.clientHttp.setLookingForAMatch(true).subscribe(() => {
       this.snackBarRef = this._snackBar.open('Cercando una nuova partita..', 'Cancella');
 
+      // In case we close the snackbar the research stops
+      this.snackBarRef.afterDismissed().subscribe(() => {
+        this.clientHttp.setLookingForAMatch(false).subscribe(() => {
+          this.searching = false;
+        })
+      });
+
+
       // Subscribing at matchFound channel
       this.channel.bind('matchFound', data =>{
-        console.log("data is ", data)
         if(data.challenged == this.clientHttp.get_username())
           // We stop looking for a match if the event is triggered so noone can find a game against us
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
             // We open the dialog and inform the user that the match against data.username is starting
-            this.matchFound = true;
+            this.searching = false;
             this.openDialog(data.username, data.matchId)
           })
         }
       );
       this.pairUser();
       })
+
 
   }
 
@@ -67,25 +76,25 @@ export class SearchMatchesComponent implements OnInit {
     this.clientHttp.pairForAMatch().subscribe((response) => {
 
       // We found a user to play with
-      if(response.user != null){
-        console.log("match has been created")
+      // We need to check for searching because it's possible that the function had recursed
+      // before the snackbar close and then it would enter on this if branch
+      console.log(this.searching)
+      if(response.user != null && this.searching){
         // We unsubscribe from the channel otherwise we get event that we triggered
         this.channel.unsubscribe('matchFound');
-        // We dismiss the snackbar to stop looking for a match
+        // We dismiss the snackbar
         this.snackBarRef.dismiss()
         this.matches.createMatch(response.user.username).subscribe((matchresponse) => {
           console.log(matchresponse)
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
             this.openDialog(response.user.username, matchresponse.id)
-            console.log(response.user.username + " informed that the match has been created")
-            this.matches.informingMatchFound(this.clientHttp.get_username(), response.user.username, matchresponse.id).subscribe(() => {
-              console.log("user " + response.user.username + " has been notificated of the match started by " + this.clientHttp.get_username())
+            this.matches.informingMatchFound(response.user.username, matchresponse.id).subscribe(() => {
             })
           })
         })
 
       }
-      else if(!this.matchFound)
+      else if(this.searching)
         setTimeout(()=>{this.pairUser()}, this.timeoutResearch)
 
     })
@@ -101,7 +110,7 @@ export class SearchMatchesComponent implements OnInit {
 
     dialogRef.afterOpened().subscribe(() => {
       setTimeout(() => {
-        this.matchFound = true;
+        this.searching = false;
         this.snackBarRef.dismiss();
         dialogRef.close();
         this.router.navigate(['match', matchId])

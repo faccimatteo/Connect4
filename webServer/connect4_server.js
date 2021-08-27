@@ -590,6 +590,19 @@ app.route("/matches").get(auth, (req, res, next) => {
         }
     });
 });
+// Return all the current matches
+app.get("/activeMatches", auth, (req, res, next) => {
+    // We find all the matches and we output them in JSON format
+    match.getModel().find({ ended: false }).then((matches) => {
+        const matchesArray = [];
+        matches.forEach(match => {
+            matchesArray.push([match._id, match.player1, match.player2]);
+        });
+        return res.status(200).json(matchesArray);
+    }).catch((reason) => {
+        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+    });
+});
 // Main rout of matches/:id
 app.route("/matches/:id").delete(auth, (req, res, next) => {
     if ((req.params.id).length != 24)
@@ -878,24 +891,24 @@ app.post("/messages", auth, (req, res, next) => {
 });
 // Pusher finding match API
 app.post("/matchFound", auth, (req, res, next) => {
-    if (req.body.matchId == null || req.body.username == null)
-        return next({ statusCode: 404, error: true, errormessage: "Body must contain username and matchId fields" });
+    if (req.body.matchId == null || req.body.challenged == null)
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain challenged and matchId fields" });
     else {
         match.getModel().findById(req.body.matchId, (err) => {
             if (err != null)
                 return next({ statusCode: err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB." });
             else {
-                user.getModel().findOne({ username: req.body.username }).then((response) => {
+                user.getModel().findOne({ username: req.body.challenged }).then((response) => {
                     if (response == null) {
-                        return next({ statusCode: 404, error: true, errormessage: "Username " + req.body.username + " has not found into the DB." });
+                        return next({ statusCode: 404, error: true, errormessage: "Username " + req.body.challenged + " has not found into the DB." });
                     }
                     else {
                         pusher.trigger("lookingForAMatch", "matchFound", {
-                            username: req.body.username,
+                            username: req.user.username,
                             challenged: req.body.challenged,
                             matchId: req.body.matchId
                         });
-                        return res.status(200).json({ message: "match found", username: req.body.username, against: req.body.challenged });
+                        return res.status(200).json({ message: "match found", username: req.user.username, against: req.body.challenged });
                     }
                 }).catch((error) => {
                     return next({ statusCode: error.code, error: true, errormessage: "Canonot find match " + req.body.matchId + " from DB." });
@@ -953,7 +966,7 @@ app.post("/doMove", auth, (req, res, next) => {
 // Pusher Connect4 API to communicate the loss
 app.post("/communicateLoss", auth, (req, res, next) => {
     if (req.body.matchId == null)
-        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId and columnIndex fields" });
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId field" });
     else {
         match.getModel().findById(req.body.matchId, (err, result) => {
             if (err != null)
@@ -976,6 +989,48 @@ app.post("/communicateLoss", auth, (req, res, next) => {
                         loser: req.user.username
                     });
                 }
+            }
+        }).catch((error) => {
+            return next({ statusCode: error.code, error: true, errormessage: "Cannot connect to DB." });
+        });
+    }
+});
+// Pusher Connect4 API useful to a spectator to request the match state
+app.post("/requestState", auth, (req, res, next) => {
+    if (req.body.matchId == null)
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId field" });
+    else {
+        match.getModel().findById(req.body.matchId, (err, result) => {
+            if (err != null)
+                return next({ statusCode: err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB." });
+            else {
+                // Sending event trigger on pusher 
+                pusher.trigger(req.body.matchId, "requestState", {});
+                return res.status(200).json({
+                    message: "User " + req.user.username + " has requested to spectate the match",
+                });
+            }
+        }).catch((error) => {
+            return next({ statusCode: error.code, error: true, errormessage: "Cannot connect to DB." });
+        });
+    }
+});
+// Pusher Connect4 API useful to a player to send the match state
+app.post("/sendState", auth, (req, res, next) => {
+    if (req.body.matchId == null)
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId field" });
+    else {
+        match.getModel().findById(req.body.matchId, (err, result) => {
+            if (err != null)
+                return next({ statusCode: err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB." });
+            else {
+                // Sending event trigger on pusher 
+                pusher.trigger(req.body.matchId, "sendState", {
+                // We need to put the current configuration here 
+                });
+                return res.status(200).json({
+                    message: "User " + req.user.username + " has requested to spectate the match",
+                });
             }
         }).catch((error) => {
             return next({ statusCode: error.code, error: true, errormessage: "Cannot connect to DB." });

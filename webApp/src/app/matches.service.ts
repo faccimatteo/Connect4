@@ -38,11 +38,11 @@ export class MatchesService {
   }
 
   // Inform the user that the match has been found
-  informingMatchFound(username:string, challenged:string, matchId:string):Observable<any>{
+  informingMatchFound(challenged:string, matchId:string):Observable<any>{
     return this.http.post(this.url + '/matchFound',{
-      username: username,
+      username: this.clientHttp.get_username(),
       matchId: matchId,
-      challenged
+      challenged: challenged
     }, this.logged).pipe(
       tap((response) => {
         response
@@ -95,7 +95,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting setMatchDrawn'))
     );
   }
 
@@ -104,7 +104,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting setMatchLoss'))
     );
   }
 
@@ -115,7 +115,36 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting communicateLoss'))
+    );
+  }
+
+  requestState(matchId:string){
+    return this.http.post(this.url + '/requestState', {
+      matchId:matchId
+    }, this.logged).pipe(
+      tap(() => {
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting requestState'))
+    );
+  }
+
+  sendState(matchId:string){
+    return this.http.post(this.url + '/sendState', {
+      matchId:matchId
+    }, this.logged).pipe(
+      tap(() => {
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting sendState'))
+    );
+  }
+
+  showMatches(){
+    return this.http.get(this.url + '/activeMatches', this.logged).pipe(
+      tap((response) => {
+        response
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting showMatches'))
     );
   }
 

@@ -26,7 +26,6 @@ export class MatchComponent implements OnInit, OnDestroy {
   public id:string = this.route.snapshot.paramMap.get('id');
   themingSubscription!: Subscription;
   public isEnded: Boolean = false;
-  private players: String[];
 
   constructor(
       private themingService: ThemingService,
@@ -40,7 +39,7 @@ export class MatchComponent implements OnInit, OnDestroy {
   @HostBinding('class') public cssClass!: string;
 
   ngOnInit(): void {
-    // Checking observe parameter to see if it's needed to update to current ngxs configuration
+    this.isEnded = false
     this.connect4Service.diskAddedSubject.subscribe(() => {
       const gameFinishInfo = this.connect4Service.checkGameFinished();
 
@@ -55,13 +54,6 @@ export class MatchComponent implements OnInit, OnDestroy {
     this.themingSubscription = this.themingService.themeBS.subscribe((theme: string) => {
         this.cssClass = theme;
     });
-
-    this.matches.getMatchById(this.id).subscribe((response) => {
-      this.players = [response.player1, response.player2]
-      this.isEnded = response.ended
-      if(!this.isEnded)
-        this.connect4Service.newGame();
-    })
 
   }
 

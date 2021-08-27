@@ -1,0 +1,69 @@
+.full-width {
+  width: 100%;
+}
+
+.shipping-card {
+  min-width: 120px;
+  margin: 20px auto;
+}
+
+.mat-radio-button {
+  display: block;
+  margin: 5px 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+}
+
+.col {
+  flex: 1;
+  margin-right: 20px;
+}
+
+.col:last-child {
+  margin-right: 0;
+}
+
+div>mat-card{
+  margin-top: 20px;
+}
+
+@media screen and (min-width:641px){
+  #container {
+    margin-top: 2%;
+    margin-left: 35%;
+    margin-right: 35%;
+  }
+
+}
+
+@media screen and (max-width:720px){
+  #container {
+    margin-top: 50%;
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+}
+
+span {
+  text-align: center;
+  display: inline-block;
+  width: 100%;
+}
+
+mat-card-header, mat-card-actions{
+  text-align: center;
+  display: inline-block;
+  width: 100%;
+}
+
+mat-card-title{
+  color: #673ab7;
+}
+
+.error {
+  background-color: #f44336;
+  color:white;
+}
