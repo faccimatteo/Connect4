@@ -5,6 +5,11 @@ export class UpdateBoard {
     constructor(public circleIndex: number, public playerIndex: PlayerIndex) {}
 }
 
+export class UpdateSpectatorBoard{
+  static readonly type = '[Connect4] Updated spectator board';
+  constructor(public currentBoardStatus: (PlayerIndex | null)[]) {}
+}
+
 export class NextTurn {
     static readonly type = "[Connect4] Next player's turn";
     constructor() {}

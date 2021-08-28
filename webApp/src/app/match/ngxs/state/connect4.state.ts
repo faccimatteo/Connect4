@@ -1,9 +1,10 @@
 import { connect4 } from './../../settings/index';
-import { NextTurn, SetGameOver, StartNewGame } from './../actions/connect4.actions';
+import { NextTurn, SetGameOver, StartNewGame, UpdateSpectatorBoard } from './../actions/connect4.actions';
 import { Injectable } from '@angular/core';
 import { State, Action, StateContext, Selector } from '@ngxs/store';
 import { UpdateBoard } from '../actions/connect4.actions';
 import { MatchesService } from 'src/app/matches.service';
+import { state } from '@angular/animations';
 
 export type PlayerIndex = 1 | 2;
 
@@ -75,6 +76,15 @@ export class Connect4State {
             ...state,
             currentBoard: updatedBoard
         });
+    }
+
+    // We pass in payload the correct current board configuration received from the player
+    @Action(UpdateSpectatorBoard)
+    updateSpectatorBoard({ patchState }: StateContext<Connect4Model>, payload: UpdateSpectatorBoard): void {
+      patchState({
+        ...state,
+        currentBoard: payload.currentBoardStatus,
+      })
     }
 
     @Action(NextTurn)
