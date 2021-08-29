@@ -27,7 +27,8 @@ import { DiskComponent } from './components/disk/disk.component';
       BannerInfoComponent,
       ChatComponent,
       MaterialModule,
-      FormsModule
+      FormsModule,
+      RouterModule
     ]
 })
 export class Connect4Module {}

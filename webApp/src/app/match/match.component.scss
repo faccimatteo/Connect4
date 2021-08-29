@@ -11,6 +11,7 @@ app-board {
     min-height: 55vh;
 }*/
 
+
 @media screen and (min-width:641px){
   #container{
     margin-top: 2%;
@@ -30,5 +31,9 @@ app-board {
   div>mat-card{
     margin-top: 20px;
   }
+}
+
+#container{
+  text-align:center;
 }
 

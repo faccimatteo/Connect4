@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ClientHttpService } from './client-http.service';
 import jwt_decode from "jwt-decode";
+import { MatchComponent } from './match/match.component';
 
 interface TokenData {
   id:string,
@@ -20,7 +21,7 @@ interface TokenData {
 export class AppComponent {
   title = 'Connect4';
 
-  constructor(public clientHttp:ClientHttpService){}
+  constructor(public clientHttp:ClientHttpService, public matchComponent:MatchComponent){}
 
   ngOnInit(){
     if (localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ""){

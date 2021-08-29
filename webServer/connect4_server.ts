@@ -40,38 +40,38 @@ import io = require('socket.io');               // Socket.io websocket library
 import { Readable } from 'stream';
 import { stringify } from 'querystring';
 
-declare global {
+/*declare global {
   namespace Express {
         // We add Mutler namespace with request interface to recognize file in request 
         namespace Multer {
-          /** Object containing file metadata and access information. */
+           Object containing file metadata and access information. 
           interface File {
-              /** Name of the form field associated with this file. */
+              Name of the form field associated with this file. 
               fieldname: string;
-              /** Name of the file on the uploader's computer. */
+              Name of the file on the uploader's computer. 
               originalname: string;
-              /**
+              
                * Value of the `Content-Transfer-Encoding` header for this file.
                * @deprecated since July 2015
                * @see RFC 7578, Section 4.7
-               */
+              
               encoding: string;
-              /** Value of the `Content-Type` header for this file. */
+              Value of the `Content-Type` header for this file. 
               mimetype: string;
-              /** Size of the file in bytes. */
+              Size of the file in bytes.
               size: number;
-              /**
+              
                * A readable stream of this file. Only available to the `_handleFile`
                * callback for custom `StorageEngine`s.
-               */
+              
               stream: Readable;
-              /** `DiskStorage` only: Directory to which this file has been uploaded. */
+              `DiskStorage` only: Directory to which this file has been uploaded.
               destination: string;
-              /** `DiskStorage` only: Name of this file within `destination`. */
+              `DiskStorage` only: Name of this file within `destination`. 
               filename: string;
-              /** `DiskStorage` only: Full path to the uploaded file. */
+              `DiskStorage` only: Full path to the uploaded file.
               path: string;
-              /** `MemoryStorage` only: A Buffer containing the entire file. */
+              `MemoryStorage` only: A Buffer containing the entire file.
               buffer: Buffer;
           }
       }
@@ -80,30 +80,37 @@ declare global {
           file?: Multer.File | undefined;
       }
 
-      interface User {
-        id: string,
-        username: string,
-        name: string,
-        surname: string,
-        moderator: boolean, 
-        firstAccess: boolean,
-        profilePic: string,
-        salt: string,   
-        digest: string, 
-        win: number,
-        loss: number,
-        draw: number,
-        friends: string[],  
-        pendingRequests: string[],  
-      }
+     
     }
 
+}*/
+
+declare global {
+  namespace Express {
+    interface User {
+      id: string,
+      username: string,
+      name: string,
+      surname: string,
+      moderator: boolean, 
+      firstAccess: boolean,
+      profilePic: string,
+      salt: string,   
+      digest: string, 
+      win: number,
+      loss: number,
+      draw: number,
+      friends: string[],  
+      pendingRequests: string[],  
+    }
+  }
+  
 }
 
 const app = express();
 
 const auth = jwt( {secret: process.env.JWT_SECRET} );
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
@@ -123,6 +130,7 @@ const pusher = new Pusher({
   useTLS: true
 });
 
+/*
 // Setting up Mutler for storing uploaded files
 const multer = require('multer');
  
@@ -136,7 +144,7 @@ const storage = multer.diskStorage({
 });
  
 const upload = multer({ storage: storage });
-
+*/
 
 app.use( (req,res,next) => {
   console.log("------------------------------------------------".inverse)

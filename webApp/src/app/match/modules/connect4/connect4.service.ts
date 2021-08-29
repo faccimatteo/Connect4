@@ -26,6 +26,7 @@ export class Connect4Service {
   private player2;
   private pusher;
   private channel;
+  private canLeaveTheGame: Boolean = true;
 
   constructor(private store: Store, private matches:MatchesService, private clientHttp:ClientHttpService) {
       this.winConditionsArray = this.getWinConditionsArray();
@@ -33,20 +34,24 @@ export class Connect4Service {
 
   public gameFinish(gameFinishInfo: GameOverInfo): void {
 
-      this.matches.getPlayers(this.matchId).subscribe((res) => {
-        this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
-        this.gameStatusSubject.next({ status: 'gameOver' });
+    this.canLeaveTheGame = false;
+    this.matches.getPlayers(this.matchId).subscribe((res) => {
+      this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
+      this.gameStatusSubject.next({ status: 'gameOver' });
 
-        // The player defeated update the status of the match
-        if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
-          this.defeat();
-        }
-      })
+      // The player defeated update the status of the match
+      console.log(this.clientHttp.get_username())
+      console.log(res.players[gameFinishInfo.byPlayer-1])
+      if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
+        this.defeat();
+      }
+    })
 
   }
 
   // We are sure that we have already received all the data from match at this point
   public newGame(): void {
+      this.canLeaveTheGame = true;
       this.store.dispatch(new StartNewGame(this.matchId));
       // We create the channel and we subscribe on it
       this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
@@ -103,23 +108,16 @@ export class Connect4Service {
       this.channel.bind('communicateLoss', (data) => {
         this.matches.getPlayers(this.matchId).subscribe((response) => {
 
-
-          const playerIndex = response.players.indexOf(data.loser);
+          const byPlayer = response.players.indexOf(data.winner) == 1 ? 2 : 1;
           // Dispatching of GameOver event passing the index of the defeated user
-          const fakeIndex: number[] = []
-          this.store.dispatch(new SetGameOver(playerIndex, fakeIndex));
+          const winConditionResolved: number[] = [];
+          // We communicate the end of the match
+          this.gameFinish({winConditionResolved, byPlayer})
 
           console.log(data.winner);
           console.log(data.loser);
         })
       })
-
-
-
-
-
-
-
       //this.gameStatusSubject.next({ status: 'newGame' });
   }
 
@@ -297,6 +295,10 @@ export class Connect4Service {
       this.matches.setMatchLoss(this.matchId).subscribe(() => {
         console.log("win/loss registered")
       })
+    }
+
+    public getCanLeaveTheGame(): Boolean{
+      return this.canLeaveTheGame;
     }
 
 }

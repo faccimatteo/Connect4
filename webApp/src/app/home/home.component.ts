@@ -26,6 +26,7 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(){
     // Checking for JWT
+    // TODO: verificare se questa cosa viene effettivamente fatta
     this.app.ngOnInit()
   }
 }

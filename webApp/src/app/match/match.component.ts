@@ -1,4 +1,4 @@
-import { Component, HostBinding, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostBinding, Inject, Injectable, OnDestroy, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Subscription } from 'rxjs';
 
@@ -15,7 +15,9 @@ export interface MatchDialogData {
   username: string,
   matchId: string
 }
-
+@Injectable({
+  providedIn: 'root'
+})
 @Component({
     selector: 'app-match',
     templateUrl: './match.component.html',
@@ -26,10 +28,11 @@ export class MatchComponent implements OnInit, OnDestroy {
   public id:string = this.route.snapshot.paramMap.get('id');
   themingSubscription!: Subscription;
   public isEnded: Boolean = false;
+  public canLeaveTheGame: Boolean = true
 
   constructor(
       private themingService: ThemingService,
-      private connect4Service: Connect4Service,
+      public connect4Service: Connect4Service,
       private route: ActivatedRoute,
       private matches: MatchesService,
       private dialog: MatDialog,
@@ -39,22 +42,25 @@ export class MatchComponent implements OnInit, OnDestroy {
   @HostBinding('class') public cssClass!: string;
 
   ngOnInit(): void {
-    this.isEnded = false
-    this.connect4Service.diskAddedSubject.subscribe(() => {
-      const gameFinishInfo = this.connect4Service.checkGameFinished();
+    this.matches.getMatchById(this.id).subscribe((response) => {
+      this.isEnded = response.ended;
 
-      if (gameFinishInfo !== null) {
-          this.connect4Service.gameFinish(gameFinishInfo);
-          // play audio
-          //const hasIdentifiedWinner = gameFinishInfo.byPlayer !== null;
-          //this.audioService.playAudio(hasIdentifiedWinner ? 'victory' : 'noWinner');
-      }
+      this.connect4Service.diskAddedSubject.subscribe(() => {
+        const gameFinishInfo = this.connect4Service.checkGameFinished();
+
+        if (gameFinishInfo !== null) {
+            this.canLeaveTheGame = false;
+            this.connect4Service.gameFinish(gameFinishInfo);
+            // play audio
+            //const hasIdentifiedWinner = gameFinishInfo.byPlayer !== null;
+            //this.audioService.playAudio(hasIdentifiedWinner ? 'victory' : 'noWinner');
+        }
+      })
+
+      this.themingSubscription = this.themingService.themeBS.subscribe((theme: string) => {
+          this.cssClass = theme;
+      });
     })
-
-    this.themingSubscription = this.themingService.themeBS.subscribe((theme: string) => {
-        this.cssClass = theme;
-    });
-
   }
 
   ngOnDestroy(): void {
@@ -89,13 +95,10 @@ export class MatchDialogData {
 
   // Quit from the match and register the loss
   onQuit(){
-    this.matches.setMatchLoss(this.data.matchId).subscribe(() => {
-      console.log("win/loss registered")
-      this.matches.communicateLoss(this.data.matchId).subscribe(() => {
-        console.log("comunicationLoss event sended")
-        this.dialogRef.close();
-        this.router.navigate(['/home'])
-      })
+    this.matches.communicateLoss(this.data.matchId).subscribe(() => {
+      console.log("comunicationLoss event sended")
+      this.dialogRef.close();
+      this.router.navigate(['/home'])
     })
   }
 

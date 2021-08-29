@@ -37,7 +37,7 @@ const cors = require("cors"); // Enable CORS middleware
 const io = require("socket.io"); // Socket.io websocket library
 const app = express();
 const auth = jwt({ secret: process.env.JWT_SECRET });
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
 // Setting payload size limit
@@ -52,17 +52,21 @@ const pusher = new Pusher({
     cluster: "eu",
     useTLS: true
 });
+/*
 // Setting up Mutler for storing uploaded files
 const multer = require('multer');
+ 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads');
+        cb(null, 'uploads')
     },
     filename: (req, file, cb) => {
-        cb(null, file.originalname);
+        cb(null, file.originalname)
     }
 });
+ 
 const upload = multer({ storage: storage });
+*/
 app.use((req, res, next) => {
     console.log("------------------------------------------------".inverse);
     console.log("New request for: " + req.url);

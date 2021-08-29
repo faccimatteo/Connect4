@@ -1,5 +1,6 @@
 <mat-toolbar color="primary" >
-    <span routerLink="home" routerLinkActive="active-link">Connect 4</span>
+  <div *ngIf="this.matchComponent.isEnded">
+    <span routerLink="home">Connect 4</span>
       <span class="example-spacer"></span>
         <button mat-icon-button *ngIf="this.clientHttp.get_token() != ''" [matMenuTriggerFor]="friendrequests">
           <mat-icon>
@@ -18,7 +19,10 @@
           <button *ngIf="this.clientHttp.get_token() != '' && this.clientHttp.is_moderator()" routerLink="manageUsers" mat-menu-item>Gestisci utenti</button>
           <button (click)="this.clientHttp.logout()" mat-menu-item>Logout</button>
         </mat-menu>
-
+  </div>
+  <div *ngIf="!this.matchComponent.isEnded">
+    <span>Connect 4</span>
+  </div>
 </mat-toolbar>
 
   <router-outlet></router-outlet>

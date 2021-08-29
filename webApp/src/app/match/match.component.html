@@ -3,7 +3,7 @@
     <mat-card>
       <app-banner-info></app-banner-info>
       <app-board></app-board>
-      <button mat-raised-button (click)="openDialog()">Lascia la partita</button>
+      <button mat-raised-button *ngIf="this.connect4Service.getCanLeaveTheGame()" (click)="openDialog()">Lascia la partita</button>
     </mat-card>
     <mat-card>
       <app-chat id="{{this.id}}"></app-chat>
@@ -11,6 +11,7 @@
   </div>
   <mat-card *ngIf="this.isEnded">
     <mat-card-content>Questo match è terminato, cercane per trovarne uno nuovo!</mat-card-content>
+    <button mat-raised-button routerLink='/home' routerLinkActive="router-link-active" >Torna alla home</button>
   </mat-card>
 </div>
 

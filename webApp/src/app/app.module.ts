@@ -23,6 +23,7 @@ import { SearchFriendsComponent } from "./search-friends/search-friends.componen
 import { SearchMatchesComponent } from "./search-matches/search-matches.component";
 import { SignupComponent } from "./signup/signup.component";
 import { StatsComponent } from "./stats/stats.component";
+import { MatchComponent } from "./match/match.component";
 
 
 
