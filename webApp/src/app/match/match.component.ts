@@ -31,13 +31,13 @@ export class MatchComponent implements OnInit, OnDestroy {
   public canLeaveTheGame: Boolean = true
 
   constructor(
-      private themingService: ThemingService,
-      public connect4Service: Connect4Service,
-      private route: ActivatedRoute,
-      private matches: MatchesService,
-      private dialog: MatDialog,
-      private clientHttp: ClientHttpService,
-
+    private themingService: ThemingService,
+    public connect4Service: Connect4Service,
+    private route: ActivatedRoute,
+    private matches: MatchesService,
+    private dialog: MatDialog,
+    private clientHttp: ClientHttpService,
+    private audioService: AudioService
   ) {}
   @HostBinding('class') public cssClass!: string;
 
@@ -49,11 +49,8 @@ export class MatchComponent implements OnInit, OnDestroy {
         const gameFinishInfo = this.connect4Service.checkGameFinished();
 
         if (gameFinishInfo !== null) {
-            this.canLeaveTheGame = false;
-            this.connect4Service.gameFinish(gameFinishInfo);
-            // play audio
-            //const hasIdentifiedWinner = gameFinishInfo.byPlayer !== null;
-            //this.audioService.playAudio(hasIdentifiedWinner ? 'victory' : 'noWinner');
+          this.canLeaveTheGame = false;
+          this.connect4Service.gameFinish(gameFinishInfo);
         }
       })
 

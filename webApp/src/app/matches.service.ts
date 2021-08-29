@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { ClientHttpService } from './client-http.service';
+import { PlayerIndex } from './match/ngxs/state/connect4.state';
 
 @Injectable({
   providedIn: 'root'
@@ -129,9 +130,10 @@ export class MatchesService {
     );
   }
 
-  sendState(matchId:string){
+  sendState(matchId:string, currentBoard: (PlayerIndex | null)[]){
     return this.http.post(this.url + '/sendState', {
-      matchId:matchId
+      matchId:matchId,
+      currentBoard:currentBoard
     }, this.logged).pipe(
       tap(() => {
       }),

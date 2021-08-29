@@ -65,22 +65,23 @@ export class Connect4State {
 
     @Action(UpdateBoard)
     updateBoard({ getState, patchState, dispatch }: StateContext<Connect4Model>, payload: UpdateBoard): void {
-        const state = getState();
-        const { circleIndex, playerIndex} = payload;
-        const updatedBoard = [...state.currentBoard];
-        updatedBoard[circleIndex] = playerIndex;
+      const state = getState();
+      const { circleIndex, playerIndex} = payload;
+      const updatedBoard = [...state.currentBoard];
+      updatedBoard[circleIndex] = playerIndex;
 
-        // We say that the next turn is the one passed in updateBoard
-        dispatch(new NextTurn());
-        patchState({
-            ...state,
-            currentBoard: updatedBoard
-        });
+      // We say that the next turn is the one passed in updateBoard
+      dispatch(new NextTurn());
+      patchState({
+          ...state,
+          currentBoard: updatedBoard
+      });
     }
 
     // We pass in payload the correct current board configuration received from the player
     @Action(UpdateSpectatorBoard)
-    updateSpectatorBoard({ patchState }: StateContext<Connect4Model>, payload: UpdateSpectatorBoard): void {
+    updateSpectatorBoard({ getState, patchState }: StateContext<Connect4Model>, payload: UpdateSpectatorBoard): void {
+      const state = getState();
       patchState({
         ...state,
         currentBoard: payload.currentBoardStatus,

@@ -1,4 +1,4 @@
-import RootState from 'src/app/ngxs/state/root.state';
+/*import RootState from 'src/app/ngxs/state/root.state';
 import { NgxsModule, Store } from '@ngxs/store';
 import { TestBed } from '@angular/core/testing';
 
@@ -19,4 +19,4 @@ describe('AppSettingsService', () => {
     it('should be created', () => {
         expect(service).toBeTruthy();
     });
-});
+});*/

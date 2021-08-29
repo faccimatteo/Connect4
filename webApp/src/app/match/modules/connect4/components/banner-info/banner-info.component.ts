@@ -66,15 +66,14 @@ export class BannerInfoComponent implements OnInit {
     }
 
     private initialize(): void {
-        const { playerIndex } = this.store.selectSnapshot<{
-            playerIndex: PlayerIndex | null;
-        }>((state: AppState) => ({
-            playerIndex: state.connect4.playerPlaying,
-        }));
-        const { yourTurn } = this.translations;
+      const { yourTurn } = this.translations
+      this.matches.getMatchById(this.matchcomponent.id).subscribe((response) => {
+        const players = [response.player1, response.player2]
+        const playerIndex = players.indexOf(response.turn) == 1 ? 2 : 1;
         this.updatePlayerSection(playerIndex);
         this.playerStatusLabel = yourTurn;
         this.gameOverLabel = null;
+      })
     }
 
     private displayGameOver(): void {

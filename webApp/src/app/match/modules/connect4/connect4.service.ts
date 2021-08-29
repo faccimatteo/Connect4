@@ -4,21 +4,24 @@ import Pusher from 'pusher-js';
 import { Observable, of, Subject } from 'rxjs';
 import { ClientHttpService } from 'src/app/client-http.service';
 import { MatchesService } from 'src/app/matches.service';
+import { AudioService } from '../../shared/services/audio/audio.service';
 
 import { AppState } from './../../ngxs';
-import { SetGameOver, StartNewGame, UpdateBoard } from './../../ngxs/actions/connect4.actions';
+import { SetGameOver, StartNewGame, UpdateBoard, UpdateSpectatorBoard } from './../../ngxs/actions/connect4.actions';
 import { Connect4Board, GameOverInfo, PlayerIndex } from './../../ngxs/state/connect4.state';
 import { connect4 } from './../../settings';
 
 export type DiskAddedSubject = { slotFilled: number; byPlayerIndex: PlayerIndex };
+export type UpdatedBoardSubject = { updatedBoard: (PlayerIndex | null)[] };
 export type GameStatusSubject = { status: 'gameOver' };
 
 @Injectable({
     providedIn: 'root'
 })
 export class Connect4Service {
-  diskAddedSubject: Subject<DiskAddedSubject> = new Subject(); // trigger when a disk is added
-  gameStatusSubject: Subject<GameStatusSubject> = new Subject(); // trigger when game finished or start
+  diskAddedSubject: Subject<DiskAddedSubject> = new Subject(); // triggered when a disk is added
+  gameStatusSubject: Subject<GameStatusSubject> = new Subject(); // triggered when game finished or start
+  updateBoardSubject: Subject<UpdatedBoardSubject> = new Subject(); // triggered when board is updated in spectators
   winConditionsArray: number[][];
 
   private matchId;
@@ -28,10 +31,11 @@ export class Connect4Service {
   private channel;
   private canLeaveTheGame: Boolean = true;
 
-  constructor(private store: Store, private matches:MatchesService, private clientHttp:ClientHttpService) {
+  constructor(private store: Store, private matches:MatchesService, private clientHttp:ClientHttpService, private audioService:AudioService) {
       this.winConditionsArray = this.getWinConditionsArray();
   }
 
+  // TODO : need to fix bug for gameFinish is called multiple times
   public gameFinish(gameFinishInfo: GameOverInfo): void {
 
     this.canLeaveTheGame = false;
@@ -39,12 +43,13 @@ export class Connect4Service {
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
       this.gameStatusSubject.next({ status: 'gameOver' });
 
+      console.log(gameFinishInfo)
       // The player defeated update the status of the match
-      console.log(this.clientHttp.get_username())
-      console.log(res.players[gameFinishInfo.byPlayer-1])
-      if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
+      if(this.clientHttp.get_username() == res.players[gameFinishInfo.byPlayer-1]){
         this.defeat();
-      }
+      }else
+        this.audioService.playAudio('victory');
+
     })
 
   }
@@ -80,24 +85,32 @@ export class Connect4Service {
       // If we are a spectator we need to request the current board configuration
       this.matches.getPlayers(this.matchId).subscribe((response) => {
         if(!response.players.includes(this.clientHttp.get_username())){
-          console.log("dentro a send state")
+
+          // Requesting a correct configuration from one player
+          this.matches.requestState(this.matchId).subscribe(() => {
+          })
+
           this.channel.bind('sendState', (data) => {
             // We received the configuration from the players
-            console.log("the configuration has been received from the players")
-          })
-          // Listening on the channel waiting for a spectator to connect
-          this.matches.requestState(this.matchId).subscribe(() => {
+            // Updating the configuration received
+            this.store.dispatch(new UpdateSpectatorBoard(data.currentBoard))
+            this.updateBoardSubject.next({ updatedBoard: data.currentBoard })
           })
 
         }
         // For efficiency we make that just the first player serve the requests
         else if (this.clientHttp.get_username() == response.players[0]){
-          console.log("dentro a request state")
+
           // Listening on the channel waiting for a configuration from the
-          this.channel.bind('requestState', (data) => {
+          this.channel.bind('requestState', () => {
             // We need to send the configuration to the users
-            console.log("a user requested match state")
-            this.matches.sendState(this.matchId).subscribe(() => {
+            const { currentBoard } = this.store.selectSnapshot<{
+                currentBoard: (PlayerIndex | null)[];
+            }>((state: AppState) => ({
+              currentBoard: state.connect4.currentBoard,
+            }));
+            console.log(currentBoard)
+            this.matches.sendState(this.matchId, currentBoard).subscribe(() => {
               console.log("Configuration sent")
             })
           })
@@ -108,7 +121,7 @@ export class Connect4Service {
       this.channel.bind('communicateLoss', (data) => {
         this.matches.getPlayers(this.matchId).subscribe((response) => {
 
-          const byPlayer = response.players.indexOf(data.winner) == 1 ? 2 : 1;
+          const byPlayer = response.players.indexOf(data.loser) == 1 ? 2 : 1;
           // Dispatching of GameOver event passing the index of the defeated user
           const winConditionResolved: number[] = [];
           // We communicate the end of the match

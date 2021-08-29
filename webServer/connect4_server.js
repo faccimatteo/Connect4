@@ -1021,20 +1021,28 @@ app.post("/requestState", auth, (req, res, next) => {
 });
 // Pusher Connect4 API useful to a player to send the match state
 app.post("/sendState", auth, (req, res, next) => {
-    if (req.body.matchId == null)
-        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId field" });
+    if (req.body.matchId == null || req.body.currentBoard == null)
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId and currentBoard fields" });
     else {
         match.getModel().findById(req.body.matchId, (err, result) => {
             if (err != null)
                 return next({ statusCode: err.code, error: true, errormessage: "Match with Id " + req.body.matchId + " not found inside DB." });
             else {
-                // Sending event trigger on pusher 
-                pusher.trigger(req.body.matchId, "sendState", {
-                // We need to put the current configuration here 
-                });
-                return res.status(200).json({
-                    message: "User " + req.user.username + " has requested to spectate the match",
-                });
+                const allowed_players = [result.player1, result.player2];
+                // Checking if player is allowed 
+                if (!allowed_players.includes(req.user.username)) {
+                    return next({ statusCode: 404, error: true, errormessage: "User " + req.user.username + " is not allowed to send configuration" });
+                }
+                else {
+                    // Sending event trigger on pusher 
+                    pusher.trigger(req.body.matchId, "sendState", {
+                        // We need to put the current configuration here 
+                        currentBoard: req.body.currentBoard
+                    });
+                    return res.status(200).json({
+                        message: "User " + req.user.username + " has requested to spectate the match",
+                    });
+                }
             }
         }).catch((error) => {
             return next({ statusCode: error.code, error: true, errormessage: "Cannot connect to DB." });
