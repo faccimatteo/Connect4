@@ -1,4 +1,4 @@
-<mat-toolbar *ngIf="this.matchComponent.isEnded" color="primary" >
+<mat-toolbar color="primary">
     <span routerLink="home">Connect 4</span>
       <span class="example-spacer"></span>
         <button mat-icon-button *ngIf="this.clientHttp.get_token() != ''" [matMenuTriggerFor]="friendrequests">
@@ -19,7 +19,7 @@
           <button (click)="this.clientHttp.logout()" mat-menu-item>Logout</button>
         </mat-menu>
 </mat-toolbar>
-<mat-toolbar color="primary">
-  <span *ngIf="!this.matchComponent.isEnded">Connect 4</span>
-</mat-toolbar>
+<!--<mat-toolbar>
+  <span>Connect 4</span>
+</mat-toolbar>-->
   <router-outlet></router-outlet>

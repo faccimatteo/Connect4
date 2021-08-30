@@ -52,21 +52,6 @@ const pusher = new Pusher({
     cluster: "eu",
     useTLS: true
 });
-/*
-// Setting up Mutler for storing uploaded files
-const multer = require('multer');
- 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads')
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname)
-    }
-});
- 
-const upload = multer({ storage: storage });
-*/
 app.use((req, res, next) => {
     console.log("------------------------------------------------".inverse);
     console.log("New request for: " + req.url);
@@ -114,7 +99,6 @@ app.post('/users/addModerator', auth, (req, res, next) => {
         return next({ statusCode: 500, error: true, errormessage: reason.code + ': ' + reason.errmsg });
     });
 });
-// TODO: sistemare il problema closure
 // Endpoint to search user's friend
 app.get('/users/searchForUsers', auth, (req, res, next) => {
     var users = [];
@@ -124,19 +108,20 @@ app.get('/users/searchForUsers', auth, (req, res, next) => {
                 users.push({ "username": user.username, "picProfile": user.profilePic });
             });
             users.filter((user, index) => {
-                if (user == req.user.username) {
+                if (user.username == req.user.username) {
                     // It delete the element in index pos
                     users.splice(index, 1);
                 }
             });
             // Looking for friend of that user
-            user.getModel().find({ id: req.user.id }).select({ friends: 1 }).then((friendsList) => {
-                users.filter((user, index) => {
-                    friendsList.forEach((friend) => {
-                        if (user == friend.username)
-                            users.splice(index, 1);
-                    });
-                });
+            user.getModel().findOne({ username: req.user.username }).select({ friends: 1 }).then((friendsList) => {
+                for (var i = 0; i < users.length; i++) {
+                    if (friendsList.friends.includes(users[i].username)) {
+                        users.splice(i, 1);
+                        // We need to check again the next element 
+                        i--;
+                    }
+                }
                 return res.status(200).json({ users: users });
             }).catch((error) => {
                 return next({ statusCode: error.code, error: true, errormessage: "Couldn't find user's friends" });
@@ -222,38 +207,41 @@ app.get('/users/:username/firstLogin', auth, (req, res, next) => {
     });
 });
 // Return all users with stats
-app.get('/users/allUserWithStats', auth, (req, res, next) => {
+app.get('/users/allUserWithStats', auth, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     // To find user's friends the user that send the request has to be that user
     if (!req.user.moderator)
         return next({ statusCode: 404, error: true, errormessage: "Unauthorized: user is not a moderator" });
     else {
         var users_with_stats = [];
-        user.getModel().find({}).then(myusers => {
-            var findAndPushUser = function (user_with_stats, myuser) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    user.getModel().findOne({ username: myuser.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
-                        user_with_stats.push({
-                            "username": myuser.username,
-                            "stats": {
-                                "win": Number(stats.win),
-                                "loss": Number(stats.loss),
-                                "draw": Number(stats.draw),
-                            }
+        function myPromise() {
+            return __awaiter(this, void 0, void 0, function* () {
+                user.getModel().find({}).then((response) => {
+                    response.forEach(myuser => {
+                        user.getModel().findOne({ username: myuser.username }).select({ win: 1, loss: 1, draw: 1 }).then((stats) => {
+                            users_with_stats.push({
+                                "username": myuser.username,
+                                "stats": {
+                                    "win": stats.win,
+                                    "loss": stats.loss,
+                                    "draw": stats.draw,
+                                }
+                            });
+                            console.log("appending..");
+                        }).catch((error) => {
+                            console.log("abundalacaca");
+                            //return next({ statusCode:error.code, error: true, errormessage: "Error while trying to get user's stats of user " + req.params.username });
                         });
-                    }).catch((error) => {
-                        return next({ statusCode: error.code, error: true, errormessage: "Error while trying to get user's stats of user " + req.params.username });
                     });
+                }).catch((reason) => {
+                    return next({ statusCode: 404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason });
                 });
-            };
-            myusers.forEach((myuser) => __awaiter(void 0, void 0, void 0, function* () {
-                yield findAndPushUser(users_with_stats, myuser);
-            }));
-            return res.status(200).json({ result: users_with_stats });
-        }).catch((reason) => {
-            return next({ statusCode: 404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason });
-        });
+            });
+        }
+        yield myPromise();
+        console.log("finished");
+        return res.status(200).json({ result: users_with_stats });
     }
-});
+}));
 // Return if the user is looking for a match
 app.get('/users/getLookingForAMatch', auth, (req, res, next) => {
     // Checking if the user is a moderator or the user himself or one of his friends
@@ -461,10 +449,14 @@ app.get('/users/acceptFriendship/:friend', auth, (req, res, next) => {
                 // We update the friend list of the user 
                 if ((friendRequestsList.pendingRequests).includes(friendUser.username)) {
                     user.getModel().findByIdAndUpdate(req.user.id, { $push: { friends: friendUser.username } }).then(() => {
-                        user.getModel().findByIdAndUpdate(req.user.id, { $pull: { pendingRequests: friendUser.username } }).then(() => {
-                            return res.status(200).json({ message: "User " + req.user.username + " added friend " + friendUser.username + " correctly" });
+                        user.getModel().updateOne({ username: friendUser.username }, { $push: { friends: req.user.username } }).then(() => {
+                            user.getModel().findByIdAndUpdate(req.user.id, { $pull: { pendingRequests: friendUser.username } }).then(() => {
+                                return res.status(200).json({ message: "User " + req.user.username + " added friend " + friendUser.username + " correctly" });
+                            }).catch(() => {
+                                return next({ statusCode: 404, error: true, errormessage: "Couldn't delete " + req.params.friend + " from pending requests" });
+                            });
                         }).catch(() => {
-                            return next({ statusCode: 404, error: true, errormessage: "Couldn't delete " + req.params.friend + " from pending requests" });
+                            return next({ statusCode: 404, error: true, errormessage: "Couldn't add " + req.user.username + " to " + friendUser.username + " friends" });
                         });
                     }).catch(() => {
                         return next({ statusCode: 404, error: true, errormessage: 'User ' + friendUser.username + ' is not inside pendingFriendsRequest of user ' + req.user.username });

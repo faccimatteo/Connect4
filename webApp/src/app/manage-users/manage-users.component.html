@@ -1,1 +1,25 @@
-<p>manage-users works!</p>
+<div id="container">
+  <mat-card *ngIf="this.error != ''" class="error">
+    <mat-card-content>
+      {{this.error}}
+    </mat-card-content>
+  </mat-card>
+  <div *ngFor="let user of users">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>
+            {{user.username}}
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="row">
+          </div>
+          <div class="row">
+              <mat-card-actions>
+                <button mat-raised-button color="primary" (click)="openDialog()">Elimina</button>
+              </mat-card-actions>
+          </div>
+        </mat-card-content>
+      </mat-card>
+  </div>
+</div>

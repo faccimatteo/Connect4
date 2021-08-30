@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Store } from '@ngxs/store';
 import Pusher from 'pusher-js';
 import { Observable, of, Subject } from 'rxjs';
+import { AppComponent } from 'src/app/app.component';
 import { ClientHttpService } from 'src/app/client-http.service';
 import { MatchesService } from 'src/app/matches.service';
 import { AudioService } from '../../shared/services/audio/audio.service';
@@ -25,8 +26,8 @@ export class Connect4Service {
   winConditionsArray: number[][];
 
   private matchId;
-  private player1;
-  private player2;
+  public player1;
+  public player2;
   private pusher;
   private channel;
   private canLeaveTheGame: Boolean = true;
@@ -43,8 +44,6 @@ export class Connect4Service {
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
       this.gameStatusSubject.next({ status: 'gameOver' });
 
-      console.log(this.clientHttp.get_username())
-      console.log(res.players[gameFinishInfo.byPlayer-1])
       // The player defeated update the status of the match
       if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
         this.defeat();
@@ -110,7 +109,7 @@ export class Connect4Service {
             }>((state: AppState) => ({
               currentBoard: state.connect4.currentBoard,
             }));
-            console.log(currentBoard)
+
             this.matches.sendState(this.matchId, currentBoard).subscribe(() => {
               console.log("Configuration sent")
             })
@@ -128,8 +127,6 @@ export class Connect4Service {
           // We communicate the end of the match
           this.gameFinish({winConditionResolved, byPlayer})
 
-          console.log(data.winner);
-          console.log(data.loser);
         })
       })
       //this.gameStatusSubject.next({ status: 'newGame' });
@@ -312,7 +309,7 @@ export class Connect4Service {
     }
 
     public getCanLeaveTheGame(): Boolean{
-      return this.canLeaveTheGame;
+      return this.canLeaveTheGame && (this.clientHttp.get_username() == this.player1 || this.clientHttp.get_username() == this.player2);
     }
 
 }

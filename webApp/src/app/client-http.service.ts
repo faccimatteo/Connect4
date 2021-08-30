@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { tap, catchError, map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import jwt_decode from "jwt-decode";
 import { Router } from '@angular/router';
 
@@ -70,7 +70,9 @@ export class ClientHttpService {
         if(remember){
           localStorage.setItem('connect4_token', this.token );
         }
-      }));
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting login'))
+      );
   }
 
   register_user( username: string, name:string, surname:string, password:string, profilepic:string):Observable<any>{
@@ -96,7 +98,8 @@ export class ClientHttpService {
       tap((data) => {
         console.log("User added to database");
         console.log(JSON.stringify(data));
-      })
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting register_user'))
     );
 
   }
@@ -116,7 +119,7 @@ export class ClientHttpService {
       tap(users => {
         users
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting get_users'))
     );
   }
 
@@ -135,7 +138,7 @@ export class ClientHttpService {
       tap(() => {
 
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting isLookingForAMatch'))
     );
   }
 
@@ -154,7 +157,7 @@ export class ClientHttpService {
       tap(()=> {
 
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting setLookingForAMatch'))
     );
   }
 
@@ -174,7 +177,7 @@ export class ClientHttpService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting pairForAMatch'))
     );
   }
 
@@ -193,7 +196,7 @@ export class ClientHttpService {
       tap(() => {
 
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting delete_friends'))
     );
   }
 
@@ -212,7 +215,7 @@ export class ClientHttpService {
       tap((result) => {
         result
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting get_friendship_requests'))
     );
   }
 
@@ -230,7 +233,7 @@ export class ClientHttpService {
     return this.http.get(this.url + '/users/allUserWithStats', options).pipe(
       tap(() => {
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting get_users_stats'))
     );
   }
 
@@ -248,7 +251,7 @@ export class ClientHttpService {
     return this.http.get(this.url + '/users/sendFriendship/' + username, options).pipe(
       tap(() => {
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting send_friendship_request'))
     );
   }
 
@@ -266,7 +269,7 @@ export class ClientHttpService {
     return this.http.get(this.url + '/users/acceptFriendship/' + username, options).pipe(
       tap(() => {
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting accept_user'))
     );
   }
 
@@ -284,7 +287,7 @@ export class ClientHttpService {
     return this.http.get(this.url + '/users/rejectFriendship/' + username, options).pipe(
       tap(() => {
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting reject_user'))
     );
   }
 
@@ -301,7 +304,8 @@ export class ClientHttpService {
 
     return this.http.get(this.url + '/users/' + username, options).pipe(
       tap(() => {
-      })
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on finding user' + username))
     );
   }
 
@@ -330,7 +334,8 @@ export class ClientHttpService {
           win:data.stats.win,
           loss:data.stats.loss,
           draw:data.stats.draw};
-      })
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on loading stats'))
     );
   }
 
@@ -354,7 +359,8 @@ export class ClientHttpService {
     }, options).pipe(
       tap(() => {
         console.log('Credentials of moderator ' + this.get_username() + ' has been changed successfully');
-      })
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on updating user'))
     );
   }
 
@@ -379,7 +385,8 @@ export class ClientHttpService {
     options).pipe(
       tap(() => {
         console.log('Moderator ' + username + ' has been registered successfully');
-      })
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on registering moderator'))
     );
   }
 
@@ -398,7 +405,7 @@ export class ClientHttpService {
     // Return an array of friends associated at the user
     return this.http.get(this.url + '/users/' + this.get_username() + '/friends', options).pipe(
       tap((friends: any) => friends),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s friends list'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting user\'s friends list'))
     )
   }
 
@@ -420,7 +427,7 @@ export class ClientHttpService {
 
     return this.http.get( this.url + '/users/' + username + '/profilepic',  options).pipe(
       map((res: any) => res),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting user\'s profile pic'))
+      catchError((error: any) => throwError(error.error || 'Server error on requesting user\'s profile pic'))
     )
   }
 
@@ -442,7 +449,25 @@ export class ClientHttpService {
         localStorage.setItem('connect4_token', response.token);
         console.log('Access to user ' + this.get_username() + " garanted.");
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on user\'s first access.'))
+      catchError((error: any) => throwError(error.error || 'Server error on user\'s first access.'))
+    )
+  }
+
+
+  delete_user(username:string):Observable<any>{
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.delete( this.url + '/users/' + username,  options).pipe(
+      tap(() => {
+      }),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting delete_user.'))
     )
   }
 

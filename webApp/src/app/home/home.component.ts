@@ -4,6 +4,7 @@ import { RoutingService } from '../routing.service';
 import jwt_decode from "jwt-decode";
 import { AppComponent } from '../app.component';
 import { MatchComponent } from '../match/match.component';
+import { ChangeDetectorRef } from '@angular/core';
 
 interface TokenData {
   id:string,
