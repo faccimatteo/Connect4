@@ -3,6 +3,7 @@ import { ClientHttpService } from '../client-http.service';
 import { RoutingService } from '../routing.service';
 import jwt_decode from "jwt-decode";
 import { AppComponent } from '../app.component';
+import { MatchComponent } from '../match/match.component';
 
 interface TokenData {
   id:string,
@@ -21,10 +22,11 @@ interface TokenData {
 })
 export class HomeComponent implements OnInit {
 
-  constructor(private clientHttp:ClientHttpService, private router:RoutingService, public app: AppComponent) {
+  constructor(private clientHttp:ClientHttpService, private router:RoutingService, public app: AppComponent, private match: MatchComponent) {
   }
 
   ngOnInit(){
+    this.match.isEnded = true;
     // Checking for JWT
     // TODO: verificare se questa cosa viene effettivamente fatta
     this.app.ngOnInit()

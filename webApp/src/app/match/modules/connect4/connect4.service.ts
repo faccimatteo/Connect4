@@ -43,9 +43,10 @@ export class Connect4Service {
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
       this.gameStatusSubject.next({ status: 'gameOver' });
 
-      console.log(gameFinishInfo)
+      console.log(this.clientHttp.get_username())
+      console.log(res.players[gameFinishInfo.byPlayer-1])
       // The player defeated update the status of the match
-      if(this.clientHttp.get_username() == res.players[gameFinishInfo.byPlayer-1]){
+      if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
         this.defeat();
       }else
         this.audioService.playAudio('victory');
@@ -121,7 +122,7 @@ export class Connect4Service {
       this.channel.bind('communicateLoss', (data) => {
         this.matches.getPlayers(this.matchId).subscribe((response) => {
 
-          const byPlayer = response.players.indexOf(data.loser) == 1 ? 2 : 1;
+          const byPlayer = response.players.indexOf(data.winner) == 1 ? 2 : 1;
           // Dispatching of GameOver event passing the index of the defeated user
           const winConditionResolved: number[] = [];
           // We communicate the end of the match

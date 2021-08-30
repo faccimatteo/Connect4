@@ -84,7 +84,8 @@ export class MatchDialogData {
   constructor(public dialogRef: MatDialogRef<MatchDialogData>,
     @Inject(MAT_DIALOG_DATA) public data: MatchDialogData,
     private router: Router,
-    private matches: MatchesService) {}
+    private matches: MatchesService,
+    private matchcomponent: MatchComponent) {}
 
   onNoClick(): void {
     this.dialogRef.close();
@@ -95,7 +96,8 @@ export class MatchDialogData {
     this.matches.communicateLoss(this.data.matchId).subscribe(() => {
       console.log("comunicationLoss event sended")
       this.dialogRef.close();
-      this.router.navigate(['/home'])
+      this.matchcomponent.isEnded = true;
+      this.router.navigate(['/home']);
     })
   }
 
