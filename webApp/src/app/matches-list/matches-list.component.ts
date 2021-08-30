@@ -7,7 +7,7 @@ import { MatchesService } from '../matches.service';
 @Component({
   selector: 'app-matches-list',
   templateUrl: './matches-list.component.html',
-  styleUrls: ['./matches-list.component.scss']
+  styleUrls: ['../search-friends/search-friends.component.css']
 })
 export class MatchesListComponent implements OnInit {
 
@@ -23,6 +23,8 @@ export class MatchesListComponent implements OnInit {
   ngOnInit(): void {
     this.matchesService.showMatches().subscribe((response) => {
       this.matches = response
+      if(this.matches.length == 0)
+        this.error = "Non ci sono match in questo momento!"
     })
   }
 
