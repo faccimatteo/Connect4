@@ -219,24 +219,6 @@ export class ClientHttpService {
     );
   }
 
-  get_users_stats():Observable<any>{
-
-    // Creating header for the get request
-    const options = {
-      headers: new HttpHeaders({
-        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
-        'Cache-Control': 'no-cache',
-        'Content-Type':  'application/json',
-      })
-    };
-
-    return this.http.get(this.url + '/users/allUserWithStats', options).pipe(
-      tap(() => {
-      }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting get_users_stats'))
-    );
-  }
-
   send_friendship_request(username:string):Observable<any>{
 
     // Creating header for the get request
@@ -409,9 +391,38 @@ export class ClientHttpService {
     )
   }
 
-  get_friends_with_stats():Observable<User[]> {
-    // Return an observable with all user's friend and their stats
-    return new Observable<User[]>()
+  get_users_with_stats():Observable<any> {
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get( this.url + '/users/allUserWithStats',  options).pipe(
+      map((res: any) => res),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting get_users_with_stats'))
+    )
+  }
+
+  get_friends_with_stats():Observable<any> {
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get( this.url + '/users/friendsWithStats',  options).pipe(
+      map((res: any) => res),
+      catchError((error: any) => throwError(error.error || 'Server error on requesting get_friends_with_stats'))
+    )
   }
 
   get_profile_pic(username:string):Observable<any>{

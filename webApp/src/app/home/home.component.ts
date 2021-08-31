@@ -23,13 +23,18 @@ interface TokenData {
 })
 export class HomeComponent implements OnInit {
 
-  constructor(private clientHttp:ClientHttpService, private router:RoutingService, public app: AppComponent, private match: MatchComponent) {
+  public picProfile:string;
+
+  constructor(public clientHttp:ClientHttpService, private router:RoutingService, public app: AppComponent, private match: MatchComponent) {
   }
 
   ngOnInit(){
     this.match.isEnded = true;
+
     // Checking for JWT
-    // TODO: verificare se questa cosa viene effettivamente fatta
     this.app.ngOnInit()
+    this.clientHttp.get_profile_pic(this.clientHttp.get_username()).subscribe((response) => {
+      this.picProfile = response.profilepic
+    })
   }
 }

@@ -21,7 +21,7 @@ export class StatsComponent implements OnInit {
       // Loads stats for the current signed user
       //this.dataSource = new StatsDataSource(this.clientHttp);
 
-    }
+  }
 
   ngOnInit() {
      //Code snippet without using StatsDataSource

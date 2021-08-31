@@ -1,14 +1,10 @@
-#container{
-  margin-top: 10%;
-}
-
-
 @media screen and (min-width:767px){
   #container{
+    margin-top: 10%;
     margin-bottom: 1px;
     margin-left : 1px;
-    position: fixed;
     bottom: 0;
+    width: 450px;
   }
 
   .viewport {

@@ -1,21 +1,2 @@
-@media screen and (min-width:641px){
-  .container {
-    margin-top: 2%;
-  }
 
-  table {
-    width: 100%;
-  }
-
-}
-
-@media screen and (max-width:720px){
-  .container {
-    margin-top: 50%;
-  }
-
-  table {
-    width: 100%;
-  }
-}
 

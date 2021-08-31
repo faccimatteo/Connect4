@@ -39,6 +39,7 @@ import cors = require('cors');                  // Enable CORS middleware
 import io = require('socket.io');               // Socket.io websocket library
 import { Readable } from 'stream';
 import { stringify } from 'querystring';
+import { resolve } from 'path';
 
 declare global {
   namespace Express {
@@ -279,49 +280,6 @@ app.get('/users/:username/firstLogin', auth, (req,res,next) => {
   })
 })
 
-// Return all users with stats
-app.get('/users/allUserWithStats', auth, async (req,res,next) => {
-  
-  // To find user's friends the user that send the request has to be that user
-  if(!req.user.moderator)
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
-  else{
-      var users_with_stats = []
-      async function myPromise(){
-        user.getModel().find({}).then((response)=>{
-        
-          response.forEach(myuser => {
-            user.getModel().findOne({username:myuser.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
-
-              users_with_stats.push({
-                "username":myuser.username,
-                  "stats":{
-                    "win": stats.win,
-                    "loss": stats.loss,
-                    "draw": stats.draw,
-                  }
-              })
-
-              console.log("appending..")
-              
-            }).catch((error)=>{
-              console.log("abundalacaca")
-              //return next({ statusCode:error.code, error: true, errormessage: "Error while trying to get user's stats of user " + req.params.username });
-            })
-          })
-        
-       
-        }).catch((reason)=>{
-          return next({ statusCode:404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason}); 
-        })
-      }
-
-    await myPromise()
-    console.log("finished")
-    return res.status(200).json({result:users_with_stats}); 
-  }
-    
-});
 
 // Return if the user is looking for a match
 app.get('/users/getLookingForAMatch', auth, (req,res,next) => {
@@ -359,6 +317,93 @@ app.get('/users/pairUserForAMatch', auth, (req,res,next) => {
   }
 })
 
+
+// Return friends of a certain user
+app.get('/users/friendsWithStats', auth, (req,res,next) => {
+
+  var friends_with_stats = []
+    const myPromise = new Promise((resolve,reject) => {
+      user.getModel().findOne({username:req.user.username}).then((response)=>{
+        var myPromises = []
+        response.friends.forEach((friend,index) => {
+          var getUser = function(value){
+            return new Promise((resolve, reject) => {
+              user.getModel().findOne({username:friend}).select({win:1,loss:1,draw:1}).then((stats)=>{
+              
+                friends_with_stats.push({
+                  "username":friend,
+                    "stats":{
+                      "win": stats.win,
+                      "loss": stats.loss,
+                      "draw": stats.draw,
+                    }
+                })
+                resolve(value)
+              }).catch(() => {
+                reject(value)
+              })
+            })
+            
+          }
+
+          myPromises.push(getUser(index))
+
+        })
+        Promise.all(myPromises).then(()=>{
+          return res.status(200).json({result:friends_with_stats}); 
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason});
+        })
+      })
+    })
+
+});
+
+
+// Return all users with stats
+app.get('/users/allUserWithStats', auth, async (req,res,next) => {
+  
+  // To find user's friends the user that send the request has to be that user
+  if(!req.user.moderator)
+      return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
+  else{
+      var users_with_stats = []
+      const myPromise = new Promise((resolve,reject) => {
+        user.getModel().find({}).then((response)=>{
+          var myPromises = []
+          response.forEach((myuser,index) => {
+            var getUser = function(value){
+              return new Promise((resolve, reject) => {
+                user.getModel().findOne({username:myuser.username}).select({win:1,loss:1,draw:1}).then((stats)=>{
+                
+                  users_with_stats.push({
+                    "username":myuser.username,
+                      "stats":{
+                        "win": stats.win,
+                        "loss": stats.loss,
+                        "draw": stats.draw,
+                      }
+                  })
+                  resolve(value)
+                }).catch(() => {
+                  reject(value)
+                })
+              })
+              
+            }
+
+            myPromises.push(getUser(index))
+
+          })
+          Promise.all(myPromises).then(()=>{
+            return res.status(200).json({result:users_with_stats}); 
+          }).catch((reason)=>{
+            return next({ statusCode:404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason});
+          })
+        })
+      })
+  } 
+});
 
 // Main route of users/:username
 app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with a certain username
@@ -445,44 +490,6 @@ app.get('/users/setLookingForAMatch/:value', auth, (req,res,next) => {
 })
 
 
-// TODO: DA SISTEMARE
-// Return friends of a certain user
-app.get('/users/:username/friendsWithStats', auth, (req,res,next) => {
-  // To find user's friends the user that send the request has to be that user
-  if(req.user.username != req.params.username)
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: to see user's friend you have to be that user"});
-
-  user.getModel().findOne({username: req.params.username}).select({friends:1}).then((myuser)=>{
-    
-    if(myuser == null)
-      return res.status(200).json("The user you are looking for is not present into the DB"); 
-    else{
-      let friends_with_stats = []
-      function createArray(friends_with_stats){
-        (myuser.friends).forEach(friend => {
-          user.getModel().findOne({username:friend}).select({win:1,loss:1,draw:1}).then((stats)=>{
-              friends_with_stats.push({
-                "username":friend,
-                "stats":{
-                  "win": Number(stats.win),
-                  "loss": Number(stats.loss),
-                  "draw": Number(stats.draw),
-                }
-              })
-            })
-        });
-      }
-      createArray(friends_with_stats)
-      console.log(friends_with_stats)
-      return res.status(200).json({result:'ciao'});
-
-    }
-     
-  }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "Error while trying to get user " + req.params.username + ". " + reason}); 
-  })
-
-});
 
 // Return friends of a certain user
 app.get('/users/:username/friends', auth, (req,res,next) => {

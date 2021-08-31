@@ -18,23 +18,59 @@ interface User {
 @Component({
   selector: 'app-friends-list',
   templateUrl: './friends-list.component.html',
-  styleUrls: ['./friends-list.component.css']
+  styleUrls: ['../stats/stats.component.css']
 })
 export class FriendsListComponent{
 
-  dataSource:FriendsDataSource;
+  dataSource:User[] = [];
   displayedColumns = ['username','win','loss','draw'];
 
 
   constructor(private clientHttp: ClientHttpService) {
-    this.dataSource = new FriendsDataSource(this.clientHttp)
+    //this.dataSource = new FriendsDataSource(this.clientHttp)
   }
 
-  ngOnInit() {}
-
+  ngOnInit() {
+    //Code snippet without using StatsDataSource
+    if(!this.clientHttp.is_moderator()){
+      this.clientHttp.get_friends_with_stats().subscribe(
+        (response) =>
+        {
+          var temp_array:User[] = []
+          response.result.forEach(element => {
+            temp_array.push({
+              username: element.username,
+              stats:{
+                win: element.stats.win,
+                loss: element.stats.loss,
+                draw: element.stats.draw,
+              }
+            })
+          });
+          this.dataSource = temp_array
+      })
+    }else{
+      this.clientHttp.get_users_with_stats().subscribe(
+        (response) =>
+        {
+          var temp_array:User[] = []
+          response.result.forEach(element => {
+            temp_array.push({
+              username: element.username,
+              stats:{
+                win: element.stats.win,
+                loss: element.stats.loss,
+                draw: element.stats.draw,
+              }
+            })
+          });
+          this.dataSource = temp_array
+      })
+    }
+  }
 }
 
-
+/*
 class FriendsDataSource extends DataSource<User> {
 
     constructor(private http: ClientHttpService) {
@@ -46,7 +82,7 @@ class FriendsDataSource extends DataSource<User> {
     }
 
     disconnect() {}
-}
+}*/
 
 
 
