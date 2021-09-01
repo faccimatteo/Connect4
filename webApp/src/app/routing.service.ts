@@ -9,19 +9,17 @@ export class RoutingService {
 
   constructor(private clientHttp:ClientHttpService, private router:Router) { }
 
-    // We use 'routing' function to route the user landed in the homepage,
+  // We use 'routing' function to route the user landed in the homepage,
   // because we can't get access to local storage on 'ngOnInit'
   routing(){
     // If we have no token we redirect to login page
-    if(localStorage.getItem('connect4_token') == null)
+    if(localStorage.getItem('connect4_token') == null || localStorage.getItem('connect4_token') == '')
       this.router.navigate(['/login']);
     // On first moderator access
-    if(this.clientHttp.is_first_access() == true && this.clientHttp.is_moderator() == true)
+    else if(this.clientHttp.is_first_access() && this.clientHttp.is_moderator())
       this.router.navigate(['/reset']);
     else{
       this.router.navigate(['/home'])
     }
-
-
   }
 }

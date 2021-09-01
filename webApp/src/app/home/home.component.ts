@@ -32,9 +32,11 @@ export class HomeComponent implements OnInit {
     this.match.isEnded = true;
 
     // Checking for JWT
-    this.app.ngOnInit()
-    this.clientHttp.get_profile_pic(this.clientHttp.get_username()).subscribe((response) => {
-      this.picProfile = response.profilepic
-    })
+    if(this.app.is_allowed()){
+      this.clientHttp.get_profile_pic(this.clientHttp.get_username()).subscribe((response) => {
+        this.picProfile = response.profilepic
+      })
+    }
+
   }
 }

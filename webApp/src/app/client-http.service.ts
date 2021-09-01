@@ -85,19 +85,19 @@ export class ClientHttpService {
     };
 
     // Passing user as body field
-    return this.http.post(this.url + '/users/addUser', {
+    return this.http.post(this.url + '/users', {
       username:username,
       name:name,
       surname:surname,
       password:password,
-      moderator:false,
-      firstAccess:true,
       profilePic:profilepic
 
     }, options).pipe(
-      tap((data) => {
-        console.log("User added to database");
-        console.log(JSON.stringify(data));
+      tap((response:any) => {
+        // Once I get the response with the token from the API call
+        this.token = response.token
+        localStorage.setItem('connect4_token', response.token);
+        console.log('Access to user  garanted.');
       }),
       catchError((error: any) => throwError(error.error || 'Server error on requesting register_user'))
     );
@@ -285,7 +285,8 @@ export class ClientHttpService {
     };
 
     return this.http.get(this.url + '/users/' + username, options).pipe(
-      tap(() => {
+      tap((response) => {
+        response
       }),
       catchError((error: any) => throwError(error.error || 'Server error on finding user' + username))
     );
@@ -332,7 +333,7 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.post(this.url + '/users/setModerator/' + this.get_username(),
+    return this.http.post(this.url + '/users/setModerator/',
     {
       name:name,
       surname:surname,
@@ -340,7 +341,6 @@ export class ClientHttpService {
       profilePic:profilePic
     }, options).pipe(
       tap(() => {
-        console.log('Credentials of moderator ' + this.get_username() + ' has been changed successfully');
       }),
       catchError((error: any) => throwError(error.error || 'Server error on updating user'))
     );
@@ -360,13 +360,10 @@ export class ClientHttpService {
     return this.http.post(this.url + '/users/addModerator',
     {
       username:username,
-      moderator:true,
-      firstAccess:true,
       password:password
     },
     options).pipe(
       tap(() => {
-        console.log('Moderator ' + username + ' has been registered successfully');
       }),
       catchError((error: any) => throwError(error.error || 'Server error on registering moderator'))
     );
@@ -454,11 +451,11 @@ export class ClientHttpService {
       })
     };
 
-    return this.http.get( this.url + '/users/' + this.get_username() + '/firstLogin',  options).pipe(
+    return this.http.get( this.url + '/users/setFirstAccess',  options).pipe(
       tap((response:any) => {
         // Once I get the response with the token from the API call
+        this.token = response.token;
         localStorage.setItem('connect4_token', response.token);
-        console.log('Access to user ' + this.get_username() + " garanted.");
       }),
       catchError((error: any) => throwError(error.error || 'Server error on user\'s first access.'))
     )

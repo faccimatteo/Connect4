@@ -25,10 +25,21 @@ export class AppComponent {
   constructor(public clientHttp:ClientHttpService, public connect4service: Connect4Service, public matchComponent:MatchComponent){}
 
   ngOnInit(){
-    if (localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ""){
+    // If the token is not valid anymore
+    if (this.is_allowed()){
       const exptime = (jwt_decode(this.clientHttp.get_token()) as TokenData).exp
       if (Number(String(Date.now()).substr(0,10)) - exptime > 0)
         localStorage.setItem('connect4_token','')
+
+      // If a moderator has deleted a user
+      this.clientHttp.find_user(this.clientHttp.get_username()).subscribe(() => {
+      },(error)=>{
+        console.log(error)
+        // User not found
+        if (error.statusCode == 404){
+          localStorage.setItem('connect4_token','')
+        }
+      })
     }
   }
 

@@ -1,9 +1,8 @@
-<!--Reset credentials page-->
 <div id='container'>
   <form [formGroup]="addressForm">
     <mat-card class="login-form">
       <mat-card-header>
-        <mat-card-title>{{pageTitle}}</mat-card-title>
+        <mat-card-title>Registra un moderatore</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <div class="row">
@@ -11,7 +10,7 @@
             <mat-form-field class="full-width">
               <input matInput #username type="text" placeholder="Username" formControlName="username">
               <mat-error *ngIf="addressForm.controls['username'].hasError('required')">
-                Name is <strong>required</strong>
+                Nome <strong>obbligatorio</strong>
               </mat-error>
             </mat-form-field>
           </div>
@@ -22,7 +21,7 @@
                 <mat-icon>{{hide_password ? 'visibility_off' : 'visibility'}}</mat-icon>
               </button>
               <mat-error *ngIf="addressForm.controls['password'].hasError('required')">
-                Password is <strong>required</strong>
+                Password <strong>obbligatoria</strong>
               </mat-error>
             </mat-form-field>
           </div>
@@ -35,7 +34,7 @@
         </div>
       </mat-card-content>
       <mat-card-actions>
-        <button mat-raised-button color="primary" (click)="set_user_credentials(username.value, password.value)">Login</button>
+        <button mat-raised-button color="primary" (click)="set_user_credentials(username.value, password.value)">Registra</button>
       </mat-card-actions>
     </mat-card>
   </form>

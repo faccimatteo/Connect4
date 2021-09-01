@@ -1,12 +1,15 @@
 <div *ngIf="this.app.is_allowed()" class='container'>
-  <div class="row">
+
     <mat-card>
-      <mat-card-title>Bentornato, {{this.clientHttp.get_username()}}!</mat-card-title>
-      <mat-card-content>
-        <img mat-card-avatar *ngIf="this.picProfile != null" src="{{this.picProfile}}">
-      </mat-card-content>
+      <div class='row'>
+        <mat-card-title>
+          Benvenuto,
+          {{this.clientHttp.get_username()}}!</mat-card-title>
+        <mat-card-content>
+          <img mat-card-avatar *ngIf="this.picProfile != null" src="{{this.picProfile}}">
+        </mat-card-content>
+      </div>
     </mat-card>
-  </div>
   <app-bubble-menu></app-bubble-menu>
   <app-chat id="global"></app-chat>
   <app-search-matches></app-search-matches>

@@ -2,7 +2,7 @@
   <form [formGroup]="addressForm">
     <mat-card class="login-form">
       <mat-card-header>
-        <mat-card-title>Fill with your credentials</mat-card-title>
+        <mat-card-title>Inserisci le tue credenziali</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <div class="row">
@@ -10,7 +10,7 @@
             <mat-form-field class="full-width">
               <input matInput #username placeholder="Username" formControlName="username">
               <mat-error *ngIf="addressForm.controls['username'].hasError('required')">
-                Username is <strong>required</strong>
+                Username <strong>obbligatorio</strong>
               </mat-error>
             </mat-form-field>
           </div>
@@ -18,9 +18,12 @@
         <div class="row">
           <div class="col">
             <mat-form-field class="full-width">
-              <input matInput #password type="password" placeholder="Password" formControlName="password">
+              <input matInput #password [type]="hide_password ? 'password' : 'text'" placeholder="Password" formControlName="password">
+              <button mat-icon-button matSuffix (click)="hide_password = !hide_password" [attr.aria-label]="'Hide password'" [attr.aria-pressed]="hide_password">
+                <mat-icon>{{hide_password ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
               <mat-error *ngIf="addressForm.controls['password'].hasError('required')">
-                Password is <strong>required</strong>
+                Password <strong>obbligatoria</strong>
               </mat-error>
             </mat-form-field>
           </div>
@@ -34,6 +37,7 @@
       </mat-card-content>
       <mat-card-actions>
         <button mat-raised-button color="primary" (click)="login(username.value, password.value, remember_me.checked)">Accedi</button>
+        <button mat-raised-button color="primary" routerLink="/signup">Registrati</button>
       </mat-card-actions>
     </mat-card>
   </form>

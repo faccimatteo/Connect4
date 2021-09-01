@@ -12,9 +12,8 @@ import { RoutingService } from '../routing.service';
 export class SignupComponent implements OnInit {
 
   public duplicateUser = false;
-  public pageTitle = 'Register yourself';
   public differentPassword = false;
-  public error_message = undefined;
+  public error_message = '';
   public hide_password = true;
   public hide_confirm_password = true;
   public profilepic = '';
@@ -35,35 +34,47 @@ export class SignupComponent implements OnInit {
 
   // Cannot be called before handleUpload
   set_user(username:string, name:string, surname:string, password:string, confirm_password:string){
+    this.differentPassword = false;
     if(password != confirm_password)
       this.differentPassword = true;
     else{
       this.http.find_user(username).subscribe(
         () => {
           this.duplicateUser = true;
+        },() => {
+          if(this.profilepic == '')
+            this.error_message = 'Immagine di profilo obbligatoria'
+
+          // If the user is not present inside the db
+          else{
+            this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
+              this.http.on_first_login().subscribe(() => {
+                this.router.routing();
+              })
+            })
+          }
         }
-      ).add(()=>{
-        // If the user is not present inside the db
-        if(!this.duplicateUser)
-          this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
-            this.http.on_first_login();
-            this.router.routing();
-            // Snackbar di benvenuto
-          })
-      })
+      )
     }
 
   }
 
   handleUpload(event) {
+    if(event.target.files.length == 1){
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        this.profilepic = reader.result as string;
+      };
+      this.error_message = ''
+    }
+    else if(event.target.files.length == 0){
+      this.profilepic = ''
+      this.differentPassword = false;
+      this.error_message = 'Immagine di profilo obbligatoria'
+    }
 
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      this.profilepic = reader.result as string;
-      console.log(this.profilepic)
-    };
   }
 
 }

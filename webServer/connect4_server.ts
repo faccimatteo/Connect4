@@ -66,7 +66,7 @@ declare global {
 const app = express();
 
 const auth = jwt( {secret: process.env.JWT_SECRET} );
-//const bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
@@ -105,7 +105,7 @@ app.get("/", (req,res) => {
 });
 
 // Main route of users
-app.get('/users', auth, (req,res,next) => {// Return all users
+app.route('/users').get(auth, (req,res,next) => {// Return all users
 
   if(!req.user.moderator)
     return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
@@ -115,13 +115,54 @@ app.get('/users', auth, (req,res,next) => {// Return all users
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
+}).post((req,res,next) =>{
+   // Adding a new user
+   if(req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.profilePic == null) {
+    return next({ statusCode:404, error: true, 
+      errormessage: "Check fields in body request.\n Fields that must be inserted are: username, password, name, surname, profilePic"} );
+
+    }
+    else{
+      var u = user.newUser( req.body );
+
+      // Inserting a new user inside the system with a temporaray password
+      u.setPassword(req.body.password);
+      
+      u.name = req.body.name;
+      u.surname = req.body.surname;
+      // Setting of moderator, this endpoint is used to register moderators and normal users
+      u.moderator = false;
+      // Setting of firstAccess
+      u.firstAccess = true;
+
+      u.setDefault();
+
+      // Uploading user's profile pic as Base64 image
+      u.profilePic = req.body.profilePic;
+
+      // Saving the new user on the db 'users'
+      u.save().then((data) => {
+      
+        const tokendata = {
+          id: data._id,
+          username: data.username,
+          moderator: data.moderator,
+          firstAccess: true,
+        };
+
+        console.log("Registration succedeed. Token has been generatd" );
+        const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+
+        return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id, token: token_signed });
+      }).catch((reason) => {
+          return next({statusCode:500, error:true, errormessage: reason});
+      })
+    }
 });
 
 app.post('/users/addModerator', auth, (req,res,next) => {
   // Adding a new moderator
-  // Checking if the user who sent the request is a moderator
-  if(!req.user.moderator)
-    return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
 
   if(req.body.username == null || req.body.password == null) {
     return next({ statusCode:404, error: true, 
@@ -129,24 +170,29 @@ app.post('/users/addModerator', auth, (req,res,next) => {
 
   }
 
-  var u = user.newUser(req.body);
+  // Checking if the user who sent the request is a moderator
+  if(!req.user.moderator)
+    return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
+  else{
+    var u = user.newUser(req.body);
 
-  // Inserting a new user inside the system with a temporaray password
-  u.setPassword(req.body.password);
+    // Inserting a new user inside the system with a temporaray password
+    u.setPassword(req.body.password);
 
-  // Set user as a moderator 
-  u.setModerator();
-  u.setDefault();
+    // Set user as a moderator 
+    u.moderator = true;
 
+    u.firstAccess = true;
+    u.setDefault();
 
-  // Saving the new user on the db 'users'
-  u.save().then((data) => {
-    return res.status(200).json({ error: false, errormessage: "",message: "Moderator successfully added with the id below", id: data._id });
-  }).catch((reason) => {
-    // Handle even the case if the user is a duplicate
-    return next({statusCode:500, error:true, errormessage: reason.code + ': ' + reason.errmsg});
-  })
-  
+    // Saving the new user on the db 'users'
+    u.save().then((data) => {
+      return res.status(200).json({ error: false, errormessage: "",message: "Moderator successfully added with the id below", id: data._id });
+    }).catch((reason) => {
+      // Handle even the case if the user is a duplicate
+      return next({statusCode:500, error:true, errormessage: reason.code + ': ' + reason.errmsg});
+    })
+  }
 });
 
 // Endpoint to search user's friend
@@ -184,101 +230,64 @@ app.get('/users/searchForUsers', auth, (req,res,next) => {
     return next({statusCode:500, error:true, errormessage: "User is not defined"});
 }) 
 
-app.post('/users/addUser', (req,res,next) => {
-  
-  // Adding a new user
-  if(req.body.username == null || req.body.password == null || req.body.name == null || req.body.surname == null || req.body.moderator == null || req.body.profilePic == null || req.body.firstAccess == null) {
-    return next({ statusCode:404, error: true, 
-      errormessage: "Check fields in body request.\n Fields that must be inserted are: username, password, name, surname, moderator, profilePic, firstAccess"} );
-
-  }
-
-  var u = user.newUser( req.body );
-
-  // Inserting a new user inside the system with a temporaray password
-  u.setPassword(req.body.password);
-  
-  u.name = req.body.name;
-  u.surname = req.body.surname;
-  // Setting of moderator, this endpoint is used to register moderators and normal users
-  u.moderator = req.body.moderator;
-  // Setting of firstAccess
-  u.firstAccess = req.body.firstAccess;
-
-  u.setDefault();
-
-  // Uploading user's profile pic as Base64 image
-  u.profilePic = req.body.profilePic;
-
-  // Saving the new user on the db 'users'
-  u.save().then((data) => {
-    return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id });
-  }).catch( (reason) => {
-      return next({statusCode:500, error:true, errormessage: reason.code + ': ' + reason.errmsg});
-  })
-  
-});
-
 // Reset credentials of new moderator
-app.post('/users/setModerator/:username', auth, (req,res,next) => {
+app.post('/users/setModerator/', auth, (req,res,next) => {
   // We reset the password too because the first one was given as a temporary password
   if(req.body.password == null || req.body.name == null || req.body.surname == null || req.body.profilePic == null) {
     return next({ statusCode:404, error: true, 
       errormessage: "Check fields in body request.\n Fields that must be inserted are: name, password, surname and profilePic"} );
   }
-
-  //getting the use with the username and update the corrispondent fields
-  user.getModel().updateOne({username:req.params.username},{$set: {password:req.body.password, name:req.body.name, surname:req.body.surname, profilePic:req.body.profilePic}}).then(()=>{
-    return res.status(200).json({error: false, errormessage:"", message: "User " + req.params.username + " correctly updated"});
-  }).catch((reason)=>{
-    return next({statusCode:400, error:true, errormessage: reason.code + ': ' + reason.errmsg});
-  })
+  else{
+    //getting the use with the username and update the corrispondent fields
+    user.getModel().updateOne({username:req.user.username},{$set: {password:req.body.password, name:req.body.name, surname:req.body.surname, profilePic:req.body.profilePic}}, (err, response)=>{
+      if(err != null)
+        return next({statusCode:400, error:true, errormessage: 'DB error: ' + err});
+      else{
+        return res.status(200).json({error: false, errormessage:"", message: "User " + req.user.username + " correctly updated"});
+      }
+    })
+  }
+  
   
 });
 
 app.get('/users/:username/profilepic', auth, (req, res, next) => {
-  user.getModel().findOne({username:req.params.username}).then((user) => {
-      if (user == null) 
+  user.getModel().findOne({username:req.params.username}).then((response) => {
+      if (response == null) 
         return next({ statusCode:404, error: true, errormessage: "User " + req.params.username + " not found in DB."});
       else 
-        return res.status(200).json({"profilepic": user.profilePic});
+        return res.status(200).json({"profilepic": response.profilePic});
       
   }).catch((error) => {
     return next({ statusCode:error.code, error: true, errormessage: "Couldn't get user from DB. " + error.code});
   })
 });
 
-// Change firstaccess field when a user is logged in for the first time
-app.get('/users/:username/firstLogin', auth, (req,res,next) => {
+app.get('/users/setFirstAccess', auth, (req, res, next) => {
+  user.getModel().updateOne({username:req.user.username}, { $set: {firstAccess: false}}, (err, response) => {
+      if (err != null) 
+        return next({ statusCode:404, error: true, errormessage: "User " + req.user.username + " not found in DB."});
+      else{
 
-  // Checking if the given username exists
-  user.getModel().findOne({username: req.params.username}).then((username)=>{
-    if(username == null)
-      return next({ statusCode:404, error: true, errormessage: "The user with username " + username.username + " is not present into the DB"});
-    else{
-      user.getModel().updateOne({ _id: username._id}, {$set: {firstAccess: false}}).then(()=>{
-        
-        // Setting a new jwt on new login
         const tokendata = {
-          id: username._id,
-          username: username.username,
-          moderator: username.moderator,
+          id: req.user.id,
+          username: req.user.username,
+          moderator: req.user.moderator,
           firstAccess: false,
         };
-      
-        console.log("Login granted. New token has been generated" );
-        const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' } );
 
-        return res.status(200).json({error: false, errormessage: "", message: username.username + " firstaccess correctly updated", token:token_signed})
-      }).catch(()=>{
-        return next({ statusCode:404, error: true, errormessage: "Couldn't update " + username.username + "firstaccess"}); 
-      })
-  
-    }
-  }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+        console.log("Registration succedeed. Token has been generatd" );
+        const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+        return res.status(200).json({"message": "Correctly setted user first access.", token: token_signed});
+      }
+
+        
+      
+  }).catch((error) => {
+    return next({ statusCode:500, error: true, errormessage: "DB error on changing first access." + error});
   })
-})
+});
 
 
 // Return if the user is looking for a match
@@ -406,18 +415,15 @@ app.get('/users/allUserWithStats', auth, async (req,res,next) => {
 });
 
 // Main route of users/:username
-app.route('/users/:username').get(auth, (req,res,next) => {// Return a user with a certain username
+app.route('/users/:username').get((req,res,next) => {// Return a user with a certain username
 
-  if(!req.user.moderator)
-      return next({ statusCode:404, error: true, errormessage: "Unauthorized: user is not a moderator"});
-
-  user.getModel().findOne({username: req.params.username}).then((user)=>{
-    if(user == null)
-      return next({ statusCode:500, error: true, errormessage: "The user you are looking for is not present into the DB"});
+  user.getModel().findOne({username: req.params.username}).then((response)=>{
+    if(response == null)
+      return next({ statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"});
     else
-      return res.status(200).json(user);
+      return res.status(200).json({user: response});
   }).catch((reason)=>{
-    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
+    return next({ statusCode:500, error: true, errormessage: "DB error: " + reason}); 
   })
 
 }).delete(auth, (req,res,next)=>{// Delete a user with a certain username
@@ -1125,7 +1131,7 @@ app.post("/matchFound", auth, (req,res,next) => {
 
 // Pusher Connect4 API to make a move
 app.post("/doMove", auth, (req,res,next) => {
-  
+  console.log(req)
   if(req.body.matchId == null || req.body.columnIndex == null)
     return next({ statusCode:404, error: true, errormessage: "Body must contain matchId and columnIndex fields"});
   else{
@@ -1299,7 +1305,7 @@ app.get("/login", passport.authenticate('basic', { session: false }), (req,res,n
     id: req.user.id,
     username: req.user.username,
     moderator: req.user.moderator,
-    firstAccess: req.user.firstAccess,
+    firstAccess: req.user.firstAccess
   };
 
   console.log("Login granted. Token has been generated" );

@@ -174,7 +174,6 @@ export class Connect4Service {
       const boardSnapshot = this.store.selectSnapshot<Connect4Board>(
           (state: AppState) => state.connect4.currentBoard
       );
-      console.log(boardSnapshot)
       const result = this.winConditionsArray.filter((winArr) => {
           return (
               boardSnapshot[winArr[0]] !== null &&

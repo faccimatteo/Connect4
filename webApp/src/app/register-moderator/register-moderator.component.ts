@@ -11,7 +11,6 @@ import { ClientHttpService } from '../client-http.service';
 export class RegisterModeratorComponent implements OnInit {
 
   public requestSucceded = false;
-  public pageTitle = 'Register a moderator';
   public hide_password = true;
   public errormessage = '';
   public duplicateUser = false;
@@ -28,18 +27,17 @@ export class RegisterModeratorComponent implements OnInit {
 
   // Cannot be called before handleUpload
   set_user_credentials(username:string, password:string){
-
+    // If it was setted before
+    this.duplicateUser = false;
+    this.requestSucceded = false;
     this.http.find_user(username).subscribe(
       () => {
         this.duplicateUser = true;
       },
       (error) => {
-        console.log(error)
         // If the user is not present inside the db
-        if(error.error.statusCode == 500){
+        if(error.statusCode == 404){
           this.http.register_moderator(username, password).subscribe(()=>{
-            // If it was setted before
-            this.duplicateUser = false;
             this.requestSucceded = true;
           })
         }

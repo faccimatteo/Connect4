@@ -3,7 +3,7 @@
   <form [formGroup]="addressForm">
     <mat-card class="login-form">
       <mat-card-header>
-        <mat-card-title>{{pageTitle}}</mat-card-title>
+        <mat-card-title>Registrati</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <div class="row">
@@ -23,17 +23,17 @@
         <div class="row">
           <div class="col col-lg-4 col-md-4 col-sm-4">
             <mat-form-field class="full-width">
-              <input matInput #name type="text" placeholder="Name" formControlName="name">
+              <input matInput #name type="text" placeholder="Nome" formControlName="name">
               <mat-error *ngIf="addressForm.controls['name'].hasError('required')">
-                Name is <strong>required</strong>
+                Nome <strong>obbgliatorio</strong>
               </mat-error>
             </mat-form-field>
           </div>
           <div class="col col-lg-4 col-md-4 col-sm-4">
             <mat-form-field class="full-width">
-              <input matInput  #surname type="text" placeholder="Surname" formControlName="surname">
+              <input matInput  #surname type="text" placeholder="Cognome" formControlName="surname">
               <mat-error *ngIf="addressForm.controls['surname'].hasError('required')">
-                Surname is <strong>required</strong>
+                Cognome<strong>obbligatorio</strong>
               </mat-error>
             </mat-form-field>
           </div>
@@ -48,13 +48,13 @@
                 <mat-icon>{{hide_password ? 'visibility_off' : 'visibility'}}</mat-icon>
               </button>
               <mat-error *ngIf="addressForm.controls['password'].hasError('required')">
-                Password is <strong>required</strong>
+                Password <strong>obbligatoria</strong>
               </mat-error>
             </mat-form-field>
           </div>
           <div class="col col-lg-4 col-md-4 col-sm-4">
             <mat-form-field class="full-width">
-              <input matInput  #confirm_password [type]="hide_confirm_password ? 'password' : 'text'" placeholder="Confirm password" formControlName="confirm_password">
+              <input matInput  #confirm_password [type]="hide_confirm_password ? 'password' : 'text'" placeholder="Conferma password" formControlName="confirm_password">
               <button mat-icon-button matSuffix (click)="hide_confirm_password = !hide_confirm_password" [attr.aria-label]="'Hide password'" [attr.aria-pressed]="hide_confirm_password">
                 <mat-icon>{{hide_confirm_password ? 'visibility_off' : 'visibility'}}</mat-icon>
               </button>
@@ -68,7 +68,7 @@
           <input type="file" #uploadedfile id="fileUpload" (change)="handleUpload($event)" name="fileUpload"
         multiple="multiple" accept="image/*" formControlName="profilepic"/>
           <mat-error *ngIf="addressForm.controls['profilepic'].hasError('required')">
-            Image profile is required
+            Immagine richiesta
           </mat-error>
         </div>
         <div class="row">
@@ -77,6 +77,11 @@
             <mat-card *ngIf="duplicateUser" class="error">Il nome utente è già registrato</mat-card>
           </div>
         </div>
+      <div class="row">
+        <div class="col">
+          <mat-card *ngIf="error_message != ''" class="error">{{error_message}}</mat-card>
+        </div>
+      </div>
       </mat-card-content>
       <mat-card-actions>
         <button mat-raised-button color="primary" (click)="set_user(username.value, name.value, surname.value, password.value, confirm_password.value)">Registrati</button>
