@@ -1,12 +1,11 @@
-<div *ngIf="this.app.is_allowed()" class='container'>
-
+<div class='container'>
     <mat-card>
       <div class='row'>
         <mat-card-title>
           Benvenuto,
           {{this.clientHttp.get_username()}}!</mat-card-title>
         <mat-card-content>
-          <img mat-card-avatar *ngIf="this.picProfile != null" src="{{this.picProfile}}">
+          <img mat-card-avatar *ngIf="this.picProfile != ''" src="{{this.picProfile}}">
         </mat-card-content>
       </div>
     </mat-card>
@@ -15,7 +14,4 @@
   <app-search-matches></app-search-matches>
 
 </div>
-<div *ngIf="!this.app.is_allowed()">
-  <app-login></app-login>
-</div>
-
+<router-outlet></router-outlet>

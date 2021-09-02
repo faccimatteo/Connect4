@@ -27,26 +27,6 @@
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
-        <!--<table class="table">
-          <thead>
-            <tr>
-              <th scope="col">Username</th>
-              <th scope="col">Vittorie</th>
-              <th scope="col">Sconfitte</th>
-              <th scope="col">Pareggi</th>
-            </tr>
-          </thead>
-          <tbody>
-
-            <tr *ngFor="let item of this.dataSource">
-              <td>{{item.username}}</td>
-              <td>{{item.stats.win}}</td>
-              <td>{{item.stats.loss}}</td>
-              <td>{{item.stats.draw}}</td>
-            </tr>
-
-          </tbody>
-        </table>-->
     </div>
     <div class='col col-lg-4 col-md-4 col-sm-4'></div>
   </div>
