@@ -11,26 +11,26 @@ import { PlayerIndex } from './match/ngxs/state/connect4.state';
 })
 export class MatchesService {
 
-  public url = 'http://localhost:8080';
-
-  // Creating header for the get request
-  private logged = {
-    headers: new HttpHeaders({
-      'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
-      'Cache-Control': 'no-cache',
-      'Content-Type':  'application/json',
-    })
-  };
+  public url = 'https://localhost:8443';
 
   constructor(private http:HttpClient, private clientHttp:ClientHttpService) { }
 
 
   // Creating a match
   createMatch(username:string):Observable<any>{
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
     return this.http.post(this.url + '/matches',{
       player1: this.clientHttp.get_username(),
       player2: username
-    }, this.logged).pipe(
+    }, options).pipe(
       tap((response) => {
         response
       }),
@@ -40,11 +40,21 @@ export class MatchesService {
 
   // Inform the user that the match has been found
   informingMatchFound(challenged:string, matchId:string):Observable<any>{
+
+    // Creating header for the get request
+  const options = {
+    headers: new HttpHeaders({
+      'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+      'Cache-Control': 'no-cache',
+      'Content-Type':  'application/json',
+    })
+  };
+
     return this.http.post(this.url + '/matchFound',{
       username: this.clientHttp.get_username(),
       matchId: matchId,
       challenged: challenged
-    }, this.logged).pipe(
+    }, options).pipe(
       tap((response) => {
         response
       }),
@@ -53,7 +63,17 @@ export class MatchesService {
   }
 
   getMatchById(id:string):Observable<any>{
-    return this.http.get(this.url + '/matches/' + id, this.logged).pipe(
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/matches/' + id, options).pipe(
       tap((response) => {
         response
       }),
@@ -62,7 +82,17 @@ export class MatchesService {
   }
 
   getTurn(id:string):Observable<any>{
-    return this.http.get(this.url + '/matches/' + id + '/turn', this.logged).pipe(
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/matches/' + id + '/turn', options).pipe(
       tap((response) => {
         response
       }),
@@ -71,7 +101,17 @@ export class MatchesService {
   }
 
   getPlayers(id:string):Observable<any>{
-    return this.http.get(this.url + '/matches/' + id + '/players', this.logged).pipe(
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/matches/' + id + '/players', options).pipe(
       tap((response) => {
         response
       }),
@@ -80,10 +120,20 @@ export class MatchesService {
   }
 
   makeMove(columnIndex:number, matchId:string){
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
     return this.http.post(this.url + '/doMove', {
       columnIndex: columnIndex,
       matchId: matchId
-    }, this.logged).pipe(
+    }, options).pipe(
       tap((response) => {
         response
       }),
@@ -92,7 +142,17 @@ export class MatchesService {
   }
 
   setMatchDrawn(matchId:string){
-    return this.http.get(this.url + '/matches/' + matchId + '/setDraw', this.logged).pipe(
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/matches/' + matchId + '/setDraw', options).pipe(
       tap((response) => {
         response
       }),
@@ -101,7 +161,17 @@ export class MatchesService {
   }
 
   setMatchLoss(matchId:string){
-    return this.http.get(this.url + '/matches/' + matchId + '/setLoser', this.logged).pipe(
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/matches/' + matchId + '/setLoser', options).pipe(
       tap((response) => {
         response
       }),
@@ -110,9 +180,19 @@ export class MatchesService {
   }
 
   communicateLoss(matchId:string){
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
     return this.http.post(this.url + '/communicateLoss', {
       matchId:matchId
-    }, this.logged).pipe(
+    }, options).pipe(
       tap((response) => {
         response
       }),
@@ -121,9 +201,19 @@ export class MatchesService {
   }
 
   requestState(matchId:string){
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
     return this.http.post(this.url + '/requestState', {
       matchId:matchId
-    }, this.logged).pipe(
+    }, options).pipe(
       tap(() => {
       }),
       catchError((error: any) => throwError(error.error || 'Server error on requesting requestState'))
@@ -131,10 +221,20 @@ export class MatchesService {
   }
 
   sendState(matchId:string, currentBoard: (PlayerIndex | null)[]){
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
     return this.http.post(this.url + '/sendState', {
       matchId:matchId,
       currentBoard:currentBoard
-    }, this.logged).pipe(
+    }, options).pipe(
       tap(() => {
       }),
       catchError((error: any) => throwError(error.error || 'Server error on requesting sendState'))
@@ -142,7 +242,17 @@ export class MatchesService {
   }
 
   showMatches(){
-    return this.http.get(this.url + '/activeMatches', this.logged).pipe(
+
+    // Creating header for the get request
+    const options = {
+      headers: new HttpHeaders({
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
+        'Cache-Control': 'no-cache',
+        'Content-Type':  'application/json',
+      })
+    };
+
+    return this.http.get(this.url + '/activeMatches', options).pipe(
       tap((response) => {
         response
       }),

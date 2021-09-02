@@ -1,8 +1,9 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener } from '@angular/core';
 import { ClientHttpService } from './client-http.service';
 import jwt_decode from "jwt-decode";
 import { MatchComponent } from './match/match.component';
 import { Connect4Service } from './match/modules/connect4/connect4.service';
+import { Connect4State } from './match/ngxs/state/connect4.state';
 
 interface TokenData {
   id:string,
@@ -22,7 +23,7 @@ interface TokenData {
 export class AppComponent {
   title = 'Connect4';
 
-  constructor(public clientHttp:ClientHttpService, public connect4service: Connect4Service, public matchComponent:MatchComponent){}
+  constructor(public clientHttp:ClientHttpService, public connect4service: Connect4Service){}
 
   ngOnInit(){
     // If the token is not valid anymore
@@ -34,7 +35,6 @@ export class AppComponent {
       // If a moderator has deleted a user
       this.clientHttp.find_user(this.clientHttp.get_username()).subscribe(() => {
       },(error)=>{
-        console.log(error)
         // User not found
         if (error.statusCode == 404){
           localStorage.setItem('connect4_token','')
@@ -43,7 +43,15 @@ export class AppComponent {
     }
   }
 
-  is_allowed(){
-    return localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ""
+  is_allowed():boolean{
+    return localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ''
+  }
+
+  // We listen for broswer close
+  @HostListener('window:beforeunload', [ '$event' ])
+  beforeUnloadHandler(event) {
+    // When we don't set 'remember'
+    if(this.clientHttp.remember == false)
+      this.clientHttp.logout()
   }
 }

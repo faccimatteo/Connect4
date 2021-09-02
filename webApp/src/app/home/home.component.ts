@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnChanges, OnInit } from '@angular/core';
 import { ClientHttpService } from '../client-http.service';
 import { RoutingService } from '../routing.service';
 import jwt_decode from "jwt-decode";
 import { AppComponent } from '../app.component';
 import { MatchComponent } from '../match/match.component';
 import { ChangeDetectorRef } from '@angular/core';
+import { CanActivate } from '@angular/router';
 
 interface TokenData {
   id:string,
@@ -23,20 +24,14 @@ interface TokenData {
 })
 export class HomeComponent implements OnInit {
 
-  public picProfile:string;
+  public picProfile:string = '';
 
-  constructor(public clientHttp:ClientHttpService, private router:RoutingService, public app: AppComponent, private match: MatchComponent) {
+  constructor(public clientHttp:ClientHttpService, public app: AppComponent) {
   }
 
   ngOnInit(){
-    this.match.isEnded = true;
-
-    // Checking for JWT
-    if(this.app.is_allowed()){
-      this.clientHttp.get_profile_pic(this.clientHttp.get_username()).subscribe((response) => {
-        this.picProfile = response.profilepic
-      })
-    }
-
+    this.clientHttp.get_profile_pic(this.clientHttp.get_username()).subscribe((response) => {
+      this.picProfile = response.profilepic
+    })
   }
 }

@@ -31,12 +31,13 @@ export class ClientHttpService {
   private stats;
   private token = '';
   public user = '';
-  public url = 'http://localhost:8080';
+  public url = 'https://localhost:8443';
   public friends = []
+  public remember = true;
 
   //Inside the constructor we instantiate the token if present
   constructor(private http:HttpClient, private router:Router) {
-    console.log('Client HTTP service is up')
+
 
     // We load our token from localStorage
     const myToken = localStorage.getItem('connect4_token');
@@ -66,9 +67,11 @@ export class ClientHttpService {
       tap((data:any) => {
 
         this.token = data.token;
+        localStorage.setItem('connect4_token', this.token );
+
         // Just in case we setted remember the token is setted
-        if(remember){
-          localStorage.setItem('connect4_token', this.token );
+        if(!remember){
+          this.remember = false;
         }
       }),
       catchError((error: any) => throwError(error.error || 'Server error on requesting login'))
@@ -95,9 +98,7 @@ export class ClientHttpService {
     }, options).pipe(
       tap((response:any) => {
         // Once I get the response with the token from the API call
-        this.token = response.token
         localStorage.setItem('connect4_token', response.token);
-        console.log('Access to user  garanted.');
       }),
       catchError((error: any) => throwError(error.error || 'Server error on requesting register_user'))
     );
@@ -293,7 +294,6 @@ export class ClientHttpService {
   }
 
   logout() {
-    console.log('Logging out');
     this.token = '';
     localStorage.setItem('connect4_token', this.token);
     this.router.navigate(['/login']);
@@ -304,7 +304,7 @@ export class ClientHttpService {
     // Creating header for the get request
     const options = {
       headers: new HttpHeaders({
-        'Authorization': 'Bearer ' + this.token,
+        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
         'Cache-Control': 'no-cache',
         'Content-Type':  'application/json',
       })
@@ -454,7 +454,6 @@ export class ClientHttpService {
     return this.http.get( this.url + '/users/setFirstAccess',  options).pipe(
       tap((response:any) => {
         // Once I get the response with the token from the API call
-        this.token = response.token;
         localStorage.setItem('connect4_token', response.token);
       }),
       catchError((error: any) => throwError(error.error || 'Server error on user\'s first access.'))

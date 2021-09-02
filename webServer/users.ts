@@ -168,7 +168,7 @@ userSchema.methods.getPendingRequests = function(): string[] {
 
 userSchema.methods.addFriend = function(user:User):boolean {
     if(this.pendingRequests.includes(user.username)){
-        this.friends.add(user.username);
+        this.friends.push(user.username);
         return true;
     }
     else

@@ -30,15 +30,13 @@ export class Connect4Service {
   public player2;
   private pusher;
   private channel;
-  private canLeaveTheGame: Boolean = true;
+  public canLeaveTheGame: Boolean = true;
 
   constructor(private store: Store, private matches:MatchesService, private clientHttp:ClientHttpService, private audioService:AudioService) {
       this.winConditionsArray = this.getWinConditionsArray();
   }
 
-  // TODO : need to fix bug for gameFinish is called multiple times
   public gameFinish(gameFinishInfo: GameOverInfo): void {
-
     this.canLeaveTheGame = false;
     this.matches.getPlayers(this.matchId).subscribe((res) => {
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));

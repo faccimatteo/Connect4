@@ -18,14 +18,13 @@ colors.enabled = true;
 
 
 import mongoose = require('mongoose');
-import crypto = require('crypto');
 import {Match} from './matches';
 import * as match from './matches';
 import { User } from './users';
 import * as user from './users';
 
 import express = require('express');
-import bodyparser = require('body-parser');      // body-parser middleware is used to parse the request body and
+//import bodyparser = require('body-parser');      // body-parser middleware is used to parse the request body and
                                                  // directly provide a JavaScript object if the "Content-type" is
                                                  // application/json
 
@@ -36,10 +35,6 @@ import jsonwebtoken = require('jsonwebtoken');  // JWT generation
 import jwt = require('express-jwt');            // JWT parsing middleware for express
 
 import cors = require('cors');                  // Enable CORS middleware
-import io = require('socket.io');               // Socket.io websocket library
-import { Readable } from 'stream';
-import { stringify } from 'querystring';
-import { resolve } from 'path';
 
 declare global {
   namespace Express {
@@ -66,7 +61,7 @@ declare global {
 const app = express();
 
 const auth = jwt( {secret: process.env.JWT_SECRET} );
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
@@ -239,7 +234,7 @@ app.post('/users/setModerator/', auth, (req,res,next) => {
   }
   else{
     //getting the use with the username and update the corrispondent fields
-    user.getModel().updateOne({username:req.user.username},{$set: {password:req.body.password, name:req.body.name, surname:req.body.surname, profilePic:req.body.profilePic}}, (err, response)=>{
+    user.getModel().updateOne({username:req.user.username},{$set: {password:req.body.password, name:req.body.name, surname:req.body.surname, profilePic:req.body.profilePic}}, null, (err, response)=>{
       if(err != null)
         return next({statusCode:400, error:true, errormessage: 'DB error: ' + err});
       else{
@@ -264,7 +259,7 @@ app.get('/users/:username/profilepic', auth, (req, res, next) => {
 });
 
 app.get('/users/setFirstAccess', auth, (req, res, next) => {
-  user.getModel().updateOne({username:req.user.username}, { $set: {firstAccess: false}}, (err, response) => {
+  user.getModel().updateOne({username:req.user.username}, { $set: {firstAccess: false}}, null,  (err) => {
       if (err != null) 
         return next({ statusCode:404, error: true, errormessage: "User " + req.user.username + " not found in DB."});
       else{
@@ -726,8 +721,8 @@ app.route("/matches").get(auth, (req,res,next) => {// Return all matches
   })
 });
 
-// Return all the current matches
-app.get("/activeMatches", auth, (req,res,next) => {// Return all matches 
+// Return all the active matches
+app.get("/activeMatches", auth, (req,res,next) => {
   // We find all the matches and we output them in JSON format
   match.getModel().find({ended:false}).then((matches)=>{
     const matchesArray = [];
@@ -794,7 +789,7 @@ app.get("/matches/:id/players", auth, (req,res,next) => {
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
 });
-
+/*
 // Return which players are watching the match
 app.get("/matches/:id/observers", auth, (req,res,next) => {
 
@@ -943,7 +938,7 @@ app.delete("/matches/:id/:username", auth, (req,res,next) => {
   }).catch((reason)=>{
     return next({ statusCode:404, error: true, errormessage: "DB error: " + reason}); 
   })
-});
+});*/
 
 // Return who is allowed to do the next move
 app.get("/matches/:id/turn", auth, (req,res,next) => {
@@ -1037,17 +1032,17 @@ app.get("/matches/:id/setLoser", auth, (req,res,next) => {
             return res.status(200).json({message:"The user you are trying to insert is not present into the db or is not equal to one of the two match's players."});
           else{
             // incrementing user losses
-            user.getModel().updateOne({username:req.user.username}, { $inc: { loss: 1 }}, (err) =>{
+            user.getModel().updateOne({username:req.user.username}, { $inc: { loss: 1 }}, null, (err) =>{
               if(err != null)
                 return next({statusCode:err.code, error: true, errormessage: "DB error: " + err});
               else{
                 // incrementing user wins
-                user.getModel().updateOne({username:opponent}, { $inc: { win: 1 }}, (err)=>{
+                user.getModel().updateOne({username:opponent}, { $inc: { win: 1 }}, null, (err)=>{
                   // If the control flow pass, set the loser of the match, set the match winner, the match is ended and make the turn null
                   if(err != null)
                     return next({statusCode:err.code, error: true, errormessage: "DB error: " + err});
                   else{
-                    match.getModel().updateOne({ _id: myId}, {$set: {loser: req.user.username, winner: opponent, ended: true, turn:null}}, (err)=>{
+                    match.getModel().updateOne({ _id: myId}, {$set: {loser: req.user.username, winner: opponent, ended: true, turn:null}}, null, (err)=>{
                       if(err != null)
                         return next({statusCode:err.code, error: true, errormessage: "DB error: " + err});
                       else {
@@ -1131,7 +1126,6 @@ app.post("/matchFound", auth, (req,res,next) => {
 
 // Pusher Connect4 API to make a move
 app.post("/doMove", auth, (req,res,next) => {
-  console.log(req)
   if(req.body.matchId == null || req.body.columnIndex == null)
     return next({ statusCode:404, error: true, errormessage: "Body must contain matchId and columnIndex fields"});
   else{
@@ -1192,17 +1186,23 @@ app.post("/communicateLoss", auth, (req,res,next) => {
           return next({ statusCode:404, error: true, errormessage: "User " + req.user.username + " is not allowed to play the game"});
         }
         else{
-          
-          // Sending event trigger on pusher 
-          pusher.trigger(req.body.matchId, "communicateLoss", {
-            winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0:1],
-            loser: req.user.username
-          });
-          return res.status(200).json({
-            message:"User " + req.user.username + " has declared his loss",
-            winner:allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0:1],
-            loser:req.user.username
-          });
+          // We need to set the match ended
+          match.getModel().updateOne({id:req.body.matchId}, {$set: {ended: true}}, null, (err) => {
+            // Sending event trigger on pusher 
+            if(err != null)
+              return next({ statusCode:404, error: true, errormessage: "Error while communicating loss: " + err});
+            else{
+              pusher.trigger(req.body.matchId, "communicateLoss", {
+                winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0:1],
+                loser: req.user.username
+              });
+              return res.status(200).json({
+                message:"User " + req.user.username + " has declared his loss",
+                winner:allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0:1],
+                loser:req.user.username
+              });
+            }
+          }) 
         }
       }
     }).catch((error) => {
@@ -1275,8 +1275,6 @@ passport.use( new passportHTTP.BasicStrategy(
 
     // Delegate function we provide to passport middleware
     // to verify user credentials 
-
-    console.log("New login attempt from ".green + usersname );
     
     user.getModel().findOne( {username: usersname} , (err, user)=>{
       if(err) {
@@ -1308,7 +1306,6 @@ app.get("/login", passport.authenticate('basic', { session: false }), (req,res,n
     firstAccess: req.user.firstAccess
   };
 
-  console.log("Login granted. Token has been generated" );
   const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
 
   return res.status(200).json({ error: false, errormessage: "", token: token_signed });
@@ -1341,8 +1338,6 @@ app.use( (req,res,next) => {
 mongoose.connect( 'mongodb://localhost:27017/connect4' , { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify:false })
 .then( 
   () => {
-
-    console.log("Connected to MongoDB");
     return user.getModel().findOne({});
   }
 ).then(
@@ -1361,17 +1356,11 @@ mongoose.connect( 'mongodb://localhost:27017/connect4' , { useNewUrlParser: true
       u.setPassword("admin");
       u.setDefault();
       u.save()
-    } else {
-      console.log("Admin user already exists");
     }
   }).then(      
   () => {
     let server = http.createServer(app);
 
-    const ios = io(server);
-    ios.on('connection', function (client) {
-      console.log("Socket.io client connected".green);
-    });
 
     server.listen(8080, () => console.log("HTTP Server started on port 8080".green));
 

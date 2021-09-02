@@ -27,6 +27,7 @@ const mongoose = require("mongoose");
 const match = require("./matches");
 const user = require("./users");
 const express = require("express");
+//import bodyparser = require('body-parser');      // body-parser middleware is used to parse the request body and
 // directly provide a JavaScript object if the "Content-type" is
 // application/json
 const passport = require("passport"); // authentication middleware for Express
@@ -34,10 +35,9 @@ const passportHTTP = require("passport-http"); // implements Basic and Digest au
 const jsonwebtoken = require("jsonwebtoken"); // JWT generation
 const jwt = require("express-jwt"); // JWT parsing middleware for express
 const cors = require("cors"); // Enable CORS middleware
-const io = require("socket.io"); // Socket.io websocket library
 const app = express();
 const auth = jwt({ secret: process.env.JWT_SECRET });
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
 // Setting payload size limit
@@ -177,7 +177,7 @@ app.post('/users/setModerator/', auth, (req, res, next) => {
     }
     else {
         //getting the use with the username and update the corrispondent fields
-        user.getModel().updateOne({ username: req.user.username }, { $set: { password: req.body.password, name: req.body.name, surname: req.body.surname, profilePic: req.body.profilePic } }, (err, response) => {
+        user.getModel().updateOne({ username: req.user.username }, { $set: { password: req.body.password, name: req.body.name, surname: req.body.surname, profilePic: req.body.profilePic } }, null, (err, response) => {
             if (err != null)
                 return next({ statusCode: 400, error: true, errormessage: 'DB error: ' + err });
             else {
@@ -197,7 +197,7 @@ app.get('/users/:username/profilepic', auth, (req, res, next) => {
     });
 });
 app.get('/users/setFirstAccess', auth, (req, res, next) => {
-    user.getModel().updateOne({ username: req.user.username }, { $set: { firstAccess: false } }, (err, response) => {
+    user.getModel().updateOne({ username: req.user.username }, { $set: { firstAccess: false } }, null, (err) => {
         if (err != null)
             return next({ statusCode: 404, error: true, errormessage: "User " + req.user.username + " not found in DB." });
         else {
@@ -597,7 +597,7 @@ app.route("/matches").get(auth, (req, res, next) => {
         }
     });
 });
-// Return all the current matches
+// Return all the active matches
 app.get("/activeMatches", auth, (req, res, next) => {
     // We find all the matches and we output them in JSON format
     match.getModel().find({ ended: false }).then((matches) => {
@@ -652,123 +652,156 @@ app.get("/matches/:id/players", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
     });
 });
+/*
 // Return which players are watching the match
-app.get("/matches/:id/observers", auth, (req, res, next) => {
-    const myId = mongoose.Types.ObjectId(req.params.id);
-    match.getModel().findOne({ _id: myId }).select({ spectators: 1 }).then((observers) => {
-        // Checking if the match exists
-        if (observers == null)
-            return next({ statusCode: 404, error: true, errormessage: "The match you are looking for is not present into the DB" });
-        // Extracting only the users that are currently wacthing the match
-        const ourObservers = [];
-        for (var i = 0; i < observers.spectators[1].length; i++) {
-            if (observers.spectators[1][i])
-                // If the spectator is currently watching the match is added to indexes
-                ourObservers.push(observers.spectators[0][i]);
-        }
-        return res.status(200).json({ "observers": ourObservers });
-    }).catch((reason) => {
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-    });
+app.get("/matches/:id/observers", auth, (req,res,next) => {
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"});
+    
+    // Extracting only the users that are currently wacthing the match
+    const ourObservers = [];
+    for(var i=0;i<observers.spectators[1].length;i++){
+      if(observers.spectators[1][i])
+        // If the spectator is currently watching the match is added to indexes
+        ourObservers.push(observers.spectators[0][i]);
+    }
+
+    return res.status(200).json({"observers": ourObservers});
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+  })
 });
+
 // Add a spectator to a certain match
-app.post("/matches/:id/addSpectator/:username", auth, (req, res, next) => {
-    const myId = mongoose.Types.ObjectId(req.params.id);
-    match.getModel().findOne({ _id: myId }).select({ spectators: 1 }).then((observers) => {
-        // Checking if the match exists
-        if (observers == null)
-            return next({ statusCode: 404, error: true, errormessage: "The match you are looking for is not present into the DB" });
-        // If the request doesn't have the username field
-        if (req.params.username == null)
-            return next({ statusCode: 404, error: true, errormessage: "You need to specify the user in the request with 'username'" });
-        user.getModel().findOne({ username: req.body.username }).then((result) => {
-            // If username is not present inside the DB
-            if (result == null)
-                return next({ statusCode: 404, error: true, errormessage: "The user you've tried to add is not a DB's user" });
-            else {
-                // Spectators' array modified with the added spectator
-                var newArray = observers.spectators;
-                newArray[0].push(req.params.username);
-                newArray[1].push(true);
-                // Adding spectators to the match 
-                match.getModel().updateOne({ _id: myId }, { $set: { spectators: newArray } }).then(() => {
-                    return res.status(200).json('Spectator ' + req.params.username + ' has been successfully added.');
-                }).catch((reason) => {
-                    return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                });
-            }
+app.post("/matches/:id/addSpectator/:username", auth, (req,res,next) => {
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"});
+    
+    // If the request doesn't have the username field
+    if(req.params.username == null)
+      return next({ statusCode:404, error: true, errormessage: "You need to specify the user in the request with 'username'"});
+    
+    user.getModel().findOne({username:req.body.username}).then((result)=>{
+      
+      // If username is not present inside the DB
+      if(result == null)
+        return next({ statusCode:404, error: true, errormessage: "The user you've tried to add is not a DB's user"});
+      else{
+
+        // Spectators' array modified with the added spectator
+        var newArray = observers.spectators;
+
+        newArray[0].push(req.params.username);
+        newArray[1].push(true);
+      
+
+        // Adding spectators to the match
+        match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+          return res.status(200).json('Spectator ' +req.params.username + ' has been successfully added.');
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
         });
-    }).catch((reason) => {
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-    });
+      }
+    })
+  
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+  })
 });
+
 // Add spectators to a certain match
-app.post("/matches/:id/addSpectators", auth, (req, res, next) => {
-    const myId = mongoose.Types.ObjectId(req.params.id);
-    match.getModel().findOne({ _id: myId }).select({ spectators: 1 }).then((observers) => {
-        // Checking if the match exists
-        if (observers == null)
-            return next({ statusCode: 404, error: true, errormessage: "The match you are looking for is not present into the DB" });
-        else {
-            // Checking if the users are present into the DB
-            for (let spect in req.body.usernames) {
-                user.getModel().findOne({ username: spect }).then((result) => {
-                    if (result == null)
-                        return next({ statusCode: 404, error: true, errormessage: "The user " + req.body.usernames[spect] + " is not present into the DB" });
-                    else {
-                        // Adding the relative spectator to the match
-                        observers.spectators[0].push(spect);
-                        observers.spectators[1].push(true);
-                        // Spectators' array modified with the added spectator
-                        var newArray = observers.spectators;
-                        // Adding spectators to the match 
-                        match.getModel().updateOne({ _id: myId }, { $set: { spectators: newArray } }).then(() => {
-                            return res.status(200).json('Spectators ' + req.body.usernames + ' have been successfully added.');
-                        }).catch((reason) => {
-                            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                        });
-                    }
-                });
-            }
-        }
-    });
+app.post("/matches/:id/addSpectators", auth, (req,res,next) => {
+
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"});
+    else{
+
+      // Checking if the users are present into the DB
+      for(let spect in req.body.usernames){
+        user.getModel().findOne({username:spect}).then((result)=>{
+          if(result == null)
+            return next({ statusCode:404, error: true, errormessage: "The user " + req.body.usernames[spect] + " is not present into the DB"});
+          else{
+            // Adding the relative spectator to the match
+            observers.spectators[0].push(spect);
+            observers.spectators[1].push(true);
+
+             // Spectators' array modified with the added spectator
+              var newArray = observers.spectators;
+
+              // Adding spectators to the match
+              match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+                return res.status(200).json('Spectators ' + req.body.usernames + ' have been successfully added.');
+              }).catch((reason)=>{
+                return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+              })
+              
+          }
+        })
+      }
+    }
+  })
 });
+
 // Return which players have seen the match
-app.get("/matches/:id/spectators", auth, (req, res, next) => {
-    const myId = mongoose.Types.ObjectId(req.params.id);
-    match.getModel().findOne({ _id: myId }).select({ spectators: 1 }).then((spectators) => {
-        return res.status(200).json(spectators);
-    }).catch((reason) => {
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-    });
+app.get("/matches/:id/spectators", auth, (req,res,next) => {
+  
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((spectators)=>{
+    return res.status(200).json(spectators);
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+  })
 });
+
 // Set that a spectator is not watching a match anymore
-app.delete("/matches/:id/:username", auth, (req, res, next) => {
-    const myId = mongoose.Types.ObjectId(req.params.id);
-    match.getModel().findOne({ _id: myId }).select({ spectators: 1 }).then((observers) => {
-        // Checking if the match exists
-        if (observers == null)
-            return next({ statusCode: 404, error: true, errormessage: "The match you are looking for is not present into the DB" });
-        user.getModel().findOne({ username: req.body.username }).then((result) => {
-            // If username is not present inside the DB
-            if (result == null)
-                return next({ statusCode: 404, error: true, errormessage: "The user you've tried to delete is not a DB's user" });
-            else {
-                // Spectators' array modified with the added spectator
-                var newArray = observers.spectators;
-                newArray[1][newArray[0].indexOf(req.params.username)] = false;
-                // Adding spectators to the match 
-                match.getModel().updateOne({ _id: myId }, { $set: { spectators: newArray } }).then(() => {
-                    return res.status(200).json('Spectator ' + req.params.username + ' is not watching the match anymore');
-                }).catch((reason) => {
-                    return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                });
-            }
+app.delete("/matches/:id/:username", auth, (req,res,next) => {
+  
+  const myId = mongoose.Types.ObjectId(req.params.id);
+  match.getModel().findOne({_id:myId}).select({spectators:1}).then((observers)=>{
+    
+    // Checking if the match exists
+    if(observers == null)
+      return next({ statusCode:404, error: true, errormessage: "The match you are looking for is not present into the DB"});
+    
+    user.getModel().findOne({username:req.body.username}).then((result)=>{
+      
+      // If username is not present inside the DB
+      if(result == null)
+        return next({ statusCode:404, error: true, errormessage: "The user you've tried to delete is not a DB's user"});
+      else{
+
+        // Spectators' array modified with the added spectator
+        var newArray = observers.spectators;
+        newArray[1][newArray[0].indexOf(req.params.username)] = false;
+
+        // Adding spectators to the match
+        match.getModel().updateOne({ _id: myId}, { $set: { spectators:  newArray} }).then(()=>{
+          return res.status(200).json('Spectator ' +req.params.username + ' is not watching the match anymore');
+        }).catch((reason)=>{
+          return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
         });
-    }).catch((reason) => {
-        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-    });
-});
+      }
+    })
+  
+  }).catch((reason)=>{
+    return next({ statusCode:404, error: true, errormessage: "DB error: " + reason});
+  })
+});*/
 // Return who is allowed to do the next move
 app.get("/matches/:id/turn", auth, (req, res, next) => {
     const myId = mongoose.Types.ObjectId(req.params.id);
@@ -843,17 +876,17 @@ app.get("/matches/:id/setLoser", auth, (req, res, next) => {
                         return res.status(200).json({ message: "The user you are trying to insert is not present into the db or is not equal to one of the two match's players." });
                     else {
                         // incrementing user losses
-                        user.getModel().updateOne({ username: req.user.username }, { $inc: { loss: 1 } }, (err) => {
+                        user.getModel().updateOne({ username: req.user.username }, { $inc: { loss: 1 } }, null, (err) => {
                             if (err != null)
                                 return next({ statusCode: err.code, error: true, errormessage: "DB error: " + err });
                             else {
                                 // incrementing user wins
-                                user.getModel().updateOne({ username: opponent }, { $inc: { win: 1 } }, (err) => {
+                                user.getModel().updateOne({ username: opponent }, { $inc: { win: 1 } }, null, (err) => {
                                     // If the control flow pass, set the loser of the match, set the match winner, the match is ended and make the turn null
                                     if (err != null)
                                         return next({ statusCode: err.code, error: true, errormessage: "DB error: " + err });
                                     else {
-                                        match.getModel().updateOne({ _id: myId }, { $set: { loser: req.user.username, winner: opponent, ended: true, turn: null } }, (err) => {
+                                        match.getModel().updateOne({ _id: myId }, { $set: { loser: req.user.username, winner: opponent, ended: true, turn: null } }, null, (err) => {
                                             if (err != null)
                                                 return next({ statusCode: err.code, error: true, errormessage: "DB error: " + err });
                                             else {
@@ -928,7 +961,6 @@ app.post("/matchFound", auth, (req, res, next) => {
 });
 // Pusher Connect4 API to make a move
 app.post("/doMove", auth, (req, res, next) => {
-    console.log(req);
     if (req.body.matchId == null || req.body.columnIndex == null)
         return next({ statusCode: 404, error: true, errormessage: "Body must contain matchId and columnIndex fields" });
     else {
@@ -986,15 +1018,22 @@ app.post("/communicateLoss", auth, (req, res, next) => {
                     return next({ statusCode: 404, error: true, errormessage: "User " + req.user.username + " is not allowed to play the game" });
                 }
                 else {
-                    // Sending event trigger on pusher 
-                    pusher.trigger(req.body.matchId, "communicateLoss", {
-                        winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0 : 1],
-                        loser: req.user.username
-                    });
-                    return res.status(200).json({
-                        message: "User " + req.user.username + " has declared his loss",
-                        winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0 : 1],
-                        loser: req.user.username
+                    // We need to set the match ended
+                    match.getModel().updateOne({ id: req.body.matchId }, { $set: { ended: true } }, null, (err) => {
+                        // Sending event trigger on pusher 
+                        if (err != null)
+                            return next({ statusCode: 404, error: true, errormessage: "Error while communicating loss: " + err });
+                        else {
+                            pusher.trigger(req.body.matchId, "communicateLoss", {
+                                winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0 : 1],
+                                loser: req.user.username
+                            });
+                            return res.status(200).json({
+                                message: "User " + req.user.username + " has declared his loss",
+                                winner: allowed_players[allowed_players.indexOf(req.user.username) == 1 ? 0 : 1],
+                                loser: req.user.username
+                            });
+                        }
                     });
                 }
             }
@@ -1058,7 +1097,6 @@ passport.use(new passportHTTP.BasicStrategy(function (usersname, password, done)
     // "done" callback (verify callback) documentation:  http://www.passportjs.org/docs/configure/
     // Delegate function we provide to passport middleware
     // to verify user credentials 
-    console.log("New login attempt from ".green + usersname);
     user.getModel().findOne({ username: usersname }, (err, user) => {
         if (err) {
             return done({ statusCode: 500, error: true, errormessage: err });
@@ -1081,7 +1119,6 @@ app.get("/login", passport.authenticate('basic', { session: false }), (req, res,
         moderator: req.user.moderator,
         firstAccess: req.user.firstAccess
     };
-    console.log("Login granted. Token has been generated");
     const token_signed = jsonwebtoken.sign(tokendata, process.env.JWT_SECRET, { expiresIn: '24h' });
     return res.status(200).json({ error: false, errormessage: "", token: token_signed });
 });
@@ -1101,7 +1138,6 @@ app.use((req, res, next) => {
 // by using async promises
 mongoose.connect('mongodb://localhost:27017/connect4', { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
     .then(() => {
-    console.log("Connected to MongoDB");
     return user.getModel().findOne({});
 }).then((doc) => {
     if (!doc) {
@@ -1116,15 +1152,8 @@ mongoose.connect('mongodb://localhost:27017/connect4', { useNewUrlParser: true, 
         u.setDefault();
         u.save();
     }
-    else {
-        console.log("Admin user already exists");
-    }
 }).then(() => {
     let server = http.createServer(app);
-    const ios = io(server);
-    ios.on('connection', function (client) {
-        console.log("Socket.io client connected".green);
-    });
     server.listen(8080, () => console.log("HTTP Server started on port 8080".green));
     // To start an HTTPS server we create an https.Server instance 
     // passing the express application middleware. Then, we start listening

@@ -1,4 +1,4 @@
-import { Component, HostBinding, Inject, Injectable, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostBinding, HostListener, Inject, Injectable, OnDestroy, OnInit } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Subscription } from 'rxjs';
 
@@ -29,7 +29,6 @@ export class MatchComponent implements OnInit, OnDestroy {
   public id:string = this.route.snapshot.paramMap.get('id');
   themingSubscription!: Subscription;
   public isEnded: Boolean = false;
-  public canLeaveTheGame: Boolean = true
 
   constructor(
     private themingService: ThemingService,
@@ -38,18 +37,20 @@ export class MatchComponent implements OnInit, OnDestroy {
     private matches: MatchesService,
     private dialog: MatDialog,
     private clientHttp: ClientHttpService,
-    private audioService: AudioService
+    private audioService: AudioService,
+    private router: Router,
+    private app: AppComponent
   ) {}
   @HostBinding('class') public cssClass!: string;
 
   ngOnInit(): void {
+    this.app.ngOnInit()
     this.matches.getMatchById(this.id).subscribe((response) => {
       this.isEnded = response.ended;
       this.connect4Service.diskAddedSubject.subscribe(() => {
         const gameFinishInfo = this.connect4Service.checkGameFinished();
 
         if (gameFinishInfo !== null) {
-          this.canLeaveTheGame = false;
           this.connect4Service.gameFinish(gameFinishInfo);
         }
       })
@@ -74,6 +75,16 @@ export class MatchComponent implements OnInit, OnDestroy {
 
   }
 
+  // We listen for broswer close
+  @HostListener('window:beforeunload', [ '$event' ])
+  beforeUnloadHandler(event) {
+    // If we quit during the game
+    this.matches.communicateLoss(this.id).subscribe(() => {
+      this.isEnded = true;
+      this.router.navigate(['/home']);
+    });
+  }
+
 }
 
 @Component({
@@ -94,7 +105,6 @@ export class MatchDialogData {
   // Quit from the match and register the loss
   onQuit(){
     this.matches.communicateLoss(this.data.matchId).subscribe(() => {
-      console.log("comunicationLoss event sended")
       this.dialogRef.close();
       this.matchcomponent.isEnded = true;
       this.router.navigate(['/home']);

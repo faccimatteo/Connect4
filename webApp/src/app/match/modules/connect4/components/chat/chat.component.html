@@ -4,7 +4,7 @@
       <mat-card-title >Benvenuto nella chat, {{username}}!</mat-card-title>
     </mat-card-header>
       <cdk-virtual-scroll-viewport itemSize="50" class="viewport">
-        <div *ngFor="let msg of messages" class="item">
+        <div *ngFor="let msg of messages" class="item" style="text-align: left;">
           <div class="d-flex w-100 align-items-center justify-content-between">
             <strong>{{msg.username}}</strong>
           </div>
@@ -18,23 +18,6 @@
     </mat-card-actions>
   </mat-card>
 </div>
-
-
-
-<!--<div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
-      <input class='fs-5 fw-semibold' [(ngModel)]="username"/>
-    </div>
-    <div class="list-group list-group-flush border-bottom scrollarea overflow-auto">
-      <div class="list-group-item list-group-item-action py-3 lh-tight"
-          *ngFor="let msg of messages">
-        <div class="d-flex w-100 align-items-center justify-content-between">
-          <strong class="mb-1">{{msg.username}}</strong>
-        </div>
-        <div class="col-10 mb-1 small">{{msg.message}}</div>
-      </div>
-    </div>
-  </div>-->
-
 
 
 

@@ -122,7 +122,7 @@ userSchema.methods.getPendingRequests = function () {
 };
 userSchema.methods.addFriend = function (user) {
     if (this.pendingRequests.includes(user.username)) {
-        this.friends.add(user.username);
+        this.friends.push(user.username);
         return true;
     }
     else
