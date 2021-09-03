@@ -370,7 +370,7 @@ export class ClientHttpService {
   }
 
 
-  get_friends():Observable<any> {
+  get_friends(username:string):Observable<any> {
 
     // Creating header for the get request
     const options = {
@@ -381,8 +381,8 @@ export class ClientHttpService {
       })
     };
 
-    // Return an array of friends associated at the user
-    return this.http.get(this.url + '/users/' + this.get_username() + '/friends', options).pipe(
+    // Return a specific friend of a user
+    return this.http.get(this.url + '/users/' + + '/friends', options).pipe(
       tap((friends: any) => friends),
       catchError((error: any) => throwError(error.error || 'Server error on requesting user\'s friends list'))
     )

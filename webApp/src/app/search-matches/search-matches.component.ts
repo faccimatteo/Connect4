@@ -78,14 +78,12 @@ export class SearchMatchesComponent implements OnInit {
       // We found a user to play with
       // We need to check for searching because it's possible that the function had recursed
       // before the snackbar close and then it would enter on this if branch
-      console.log(this.searching)
       if(response.user != null && this.searching){
         // We unsubscribe from the channel otherwise we get event that we triggered
         this.channel.unsubscribe('matchFound');
         // We dismiss the snackbar
         this.snackBarRef.dismiss()
         this.matches.createMatch(response.user.username).subscribe((matchresponse) => {
-          console.log(matchresponse)
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
             this.openDialog(response.user.username, matchresponse.id)
             this.matches.informingMatchFound(response.user.username, matchresponse.id).subscribe(() => {

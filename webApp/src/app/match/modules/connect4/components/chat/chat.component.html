@@ -3,18 +3,41 @@
     <mat-card-header color="primary">
       <mat-card-title >Benvenuto nella chat, {{username}}!</mat-card-title>
     </mat-card-header>
-      <cdk-virtual-scroll-viewport itemSize="50" class="viewport">
-        <div *ngFor="let msg of messages" class="item" style="text-align: left;">
-          <div class="d-flex w-100 align-items-center justify-content-between">
-            <strong>{{msg.username}}</strong>
+      <!--global chat-->
+      <div *ngIf="this.id == 'global'">
+        <cdk-virtual-scroll-viewport itemSize="50" class="viewport">
+          <div *ngFor="let msg of messages[this.selected]" class="item" style="text-align: left;">
+            <div class="d-flex w-100 align-items-center justify-content-between">
+              <strong>{{msg.username}}</strong>
+            </div>
+            {{msg.message}}
           </div>
-          {{msg.message}}
-        </div>
-      </cdk-virtual-scroll-viewport>
+        </cdk-virtual-scroll-viewport>
+      </div>
+      <!--match chat-->
+      <div *ngIf="this.id != 'global'">
+        <cdk-virtual-scroll-viewport  itemSize="50" class="viewport">
+          <div *ngFor="let msg of messages" class="item" style="text-align: left;">
+            <div class="d-flex w-100 align-items-center justify-content-between">
+              <strong>{{msg.username}}</strong>
+            </div>
+            {{msg.message}}
+          </div>
+        </cdk-virtual-scroll-viewport>
+      </div>
     <mat-card-actions>
-      <form (submit)='submit()'>
-        <input class='form-control' placeholder='Scrivi qualcosa..' [value]="message" (change)="message = $event.target.value" />
-      </form>
+      <div class='row'>
+        <div class="col col-lg-7 col-md-7 col-sm-7">
+          <form (submit)='submit()'>
+            <input class='form-control' placeholder='Scrivi qualcosa..' [value]="message" (change)="message = $event.target.value" />
+          </form>
+        </div>
+        <div class="col col-lg-5 col-md-5 col-sm-5">
+          <mat-select [(value)]="this.selected">
+            <mat-option *ngFor="let chat of this.chat_channels" value="{{chat}}">{{chat}}</mat-option>
+          </mat-select>
+        </div>
+      </div>
     </mat-card-actions>
   </mat-card>
 </div>

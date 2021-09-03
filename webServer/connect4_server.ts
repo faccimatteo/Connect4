@@ -1084,10 +1084,19 @@ app.post("/messages", auth, (req,res,next) => {
     return next({ statusCode:404, error: true, errormessage: "Body must contain message, id and type fields"});
   }else{
 
-    pusher.trigger("chat" + req.body.id + req.body.type, "message", {
-      username: req.user.username,
-      message: req.body.message
-    });
+    if(req.body.message == 'accepted'){
+      pusher.trigger("chat" + req.body.id + req.body.type, "friendshipRequests", {
+        message: req.body.message,
+        to: req.body.receiver
+      });
+    }else{
+      pusher.trigger("chat" + req.body.id + req.body.type, "message", {
+        username: req.user.username,
+        message: req.body.message,
+        to: req.body.receiver
+      });
+    }
+      
     return res.status(200).json({username:req.user.username, message:req.body.message});
   }
   
