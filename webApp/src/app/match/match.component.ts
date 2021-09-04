@@ -45,7 +45,6 @@ export class MatchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.matches.getMatchById(this.id).subscribe((response) => {
       this.isEnded = response.ended;
-      this.connect4Service.canLeaveTheGame = false;
       this.connect4Service.diskAddedSubject.subscribe(() => {
         const gameFinishInfo = this.connect4Service.checkGameFinished();
 
@@ -85,6 +84,10 @@ export class MatchComponent implements OnInit, OnDestroy {
     });
   }
 
+  onLeaveTheGame(){
+    this.connect4Service.canLeaveTheGame = false;
+  }
+
 }
 
 @Component({
@@ -107,10 +110,10 @@ export class MatchDialogData {
   onQuit(){
     this.matches.communicateLoss(this.data.matchId).subscribe(() => {
       this.dialogRef.close();
-      this.connect4service.canLeaveTheGame = true;
+      this.connect4service.canLeaveTheGame = false;
       this.matchcomponent.isEnded = true;
       this.router.navigate(['/home']);
     })
   }
 
-}
+ }

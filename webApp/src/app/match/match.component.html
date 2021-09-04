@@ -11,7 +11,7 @@
   </div>
   <mat-card *ngIf="this.isEnded">
     <mat-card-content>Questo match è terminato, cercane per trovarne uno nuovo!</mat-card-content>
-    <button mat-raised-button routerLink='/home' routerLinkActive="router-link-active" >Torna alla home</button>
+    <button mat-raised-button routerLink='/home' routerLinkActive="router-link-active" (click)="this.onLeaveTheGame()" >Torna alla home</button>
   </mat-card>
 </div>
 

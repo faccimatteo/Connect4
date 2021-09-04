@@ -7,6 +7,7 @@ import { ViewChild } from '@angular/core';
 import { MatchesService } from 'src/app/matches.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Connect4Service } from '../../connect4.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-chat',
@@ -25,10 +26,11 @@ export class ChatComponent implements OnInit{
   private pusher;
   private postfix = '';
   private snackBarRef;
-  public chat_channels:string[] = ['Globale']
-  public selected = 'Globale'
+  public chat_channels:string[] = ['Globale'];
+  public selected = 'Globale';
+  private channel;
 
-  constructor(private messagesService:MessagesService, private _snackBar: MatSnackBar, private clientHttp:ClientHttpService, private matches:MatchesService, private connect4Service:Connect4Service) {
+  constructor(private messagesService:MessagesService, private _snackBar: MatSnackBar, private clientHttp:ClientHttpService, private matches:MatchesService, private connect4Service:Connect4Service, private router:Router) {
     this.username = this.clientHttp.get_username()
     // Using Pusher for real time chat
     this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
@@ -37,6 +39,16 @@ export class ChatComponent implements OnInit{
   }
 
   ngOnInit(): void {
+
+    this.channel = this.pusher.subscribe('lookingForAMatch');
+    // Subscribing at matchFound channel
+    this.channel.bind('matchFound', data =>{
+      if(data.challenged == this.clientHttp.get_username())
+        // We stop looking for a match if the event is triggered so noone can find a game against us
+        this.router.navigate(['match', data.matchId]);
+      }
+    );
+
     // When we are in global chat in the homepage
     if(this.id != "Globale"){
         this.messages = []
@@ -87,6 +99,15 @@ export class ChatComponent implements OnInit{
                 console.log("invito ricevuto")
                 this.snackBarRef = this._snackBar.open(data.username + ' ti ha invitato ad un match', 'Accetta', {
                   duration: 5000
+                });
+
+                this.snackBarRef.onAction().subscribe(() => {
+                  this.matches.createMatch(data.username, true).subscribe((matchresponse) => {
+                    this.channel.unsubscribe();
+                      this.matches.informingMatchFound(data.username, matchresponse.id).subscribe(() => {
+                        this.router.navigate(['match', matchresponse.id])
+                      })
+                  })
                 });
               }
             })

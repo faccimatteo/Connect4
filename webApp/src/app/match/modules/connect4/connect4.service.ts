@@ -38,7 +38,7 @@ export class Connect4Service {
   }
 
   public gameFinish(gameFinishInfo: GameOverInfo): void {
-    this.canLeaveTheGame = true;
+    this.canLeaveTheGame = false;
     this.matches.getPlayers(this.matchId).subscribe((res) => {
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
       this.gameStatusSubject.next({ status: 'gameOver' });
@@ -302,7 +302,6 @@ export class Connect4Service {
 
     defeat(){
       this.matches.setMatchLoss(this.matchId).subscribe(() => {
-        console.log("win/loss registered")
       })
     }
 
