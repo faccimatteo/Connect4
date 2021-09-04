@@ -6,12 +6,11 @@ export interface Match extends Document{
     player1: string,
     player2: string,
     turn: string,
-    spectators: [string[],boolean[]],
     winner: string,
     loser: string,
     ended: boolean,
+    private: boolean,
     getPlayers: ()=>string[],
-    getSpectators: ()=>string[],
     getWinner: ()=>string,
     getLoser: ()=>string,
     setEnding: ()=>void,
@@ -32,10 +31,6 @@ var matchSchema = new Schema<Match>({
         type: mongoose.SchemaTypes.String,
         required: false,
     },
-    spectators:   [{
-        type: mongoose.SchemaTypes.Mixed,
-        required: true
-    }],
     winner:   {
         type: mongoose.SchemaTypes.String,
         required: false,
@@ -49,6 +44,10 @@ var matchSchema = new Schema<Match>({
         required: false,
         default: false
     },
+    private:   {
+        type: mongoose.SchemaTypes.Boolean,
+        required: true,
+    },
     
 })
 
@@ -60,9 +59,6 @@ matchSchema.methods.getPlayers = function():string[] {
 
 }
 
-matchSchema.methods.getSpectators = function():string[] {
-    return this.spectators[0];
-}
 
 matchSchema.methods.getWinner = function():string{
     return this.winner;

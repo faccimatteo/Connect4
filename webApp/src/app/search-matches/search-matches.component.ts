@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import Pusher from 'pusher-js';
 import { ClientHttpService } from '../client-http.service';
+import { Connect4Service } from '../match/modules/connect4/connect4.service';
 import { MatchesService } from '../matches.service';
 
 export interface DialogData {
@@ -21,13 +22,12 @@ export class SearchMatchesComponent implements OnInit {
 
   private timeoutResearch = 2000;
   private timeoutDialog = 2000;
-  //private profilepic;
   private snackBarRef;
   private pusher;
   private channel;
   private searching: boolean = true;
 
-  constructor(private clientHttp: ClientHttpService, private _snackBar: MatSnackBar, private dialog:MatDialog, private router:Router, private matches:MatchesService) {
+  constructor(private clientHttp: ClientHttpService, private _snackBar: MatSnackBar, private dialog:MatDialog, private router:Router, private matches:MatchesService, public connect4Service:Connect4Service) {
     // Using Pusher to communicate user that match has been found
     this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
       cluster: 'eu'
@@ -83,7 +83,7 @@ export class SearchMatchesComponent implements OnInit {
         this.channel.unsubscribe('matchFound');
         // We dismiss the snackbar
         this.snackBarRef.dismiss()
-        this.matches.createMatch(response.user.username).subscribe((matchresponse) => {
+        this.matches.createMatch(response.user.username, false).subscribe((matchresponse) => {
           this.clientHttp.setLookingForAMatch(false).subscribe(() => {
             this.openDialog(response.user.username, matchresponse.id)
             this.matches.informingMatchFound(response.user.username, matchresponse.id).subscribe(() => {

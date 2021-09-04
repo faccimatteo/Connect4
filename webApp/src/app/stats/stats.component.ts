@@ -4,7 +4,8 @@ import { ClientHttpService } from '../client-http.service';
 interface stats {
   win:number,
   loss:number,
-  draw:number
+  draw:number,
+  matchplayed:number,
 }
 
 @Component({
@@ -14,7 +15,7 @@ interface stats {
 })
 export class StatsComponent implements OnInit {
 
-  displayedColumns = ['win', 'loss', 'draw'];
+  displayedColumns = ['win', 'loss', 'draw', 'matchplayed'];
   dataSource:stats[]= [];
   constructor(private clientHttp: ClientHttpService) {
 
@@ -32,6 +33,7 @@ export class StatsComponent implements OnInit {
           win: result.stats.win,
           loss: result.stats.loss,
           draw: result.stats.draw,
+          matchplayed: result.stats.win + result.stats.loss + result.stats.draw,
         }]
         this.dataSource = element;
       })

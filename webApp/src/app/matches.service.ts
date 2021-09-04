@@ -17,7 +17,7 @@ export class MatchesService {
 
 
   // Creating a match
-  createMatch(username:string):Observable<any>{
+  createMatch(username:string, privateMatch:boolean):Observable<any>{
     // Creating header for the get request
     const options = {
       headers: new HttpHeaders({
@@ -29,12 +29,13 @@ export class MatchesService {
 
     return this.http.post(this.url + '/matches',{
       player1: this.clientHttp.get_username(),
-      player2: username
+      player2: username,
+      private: privateMatch
     }, options).pipe(
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting searchPlayers'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -58,7 +59,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => Observable.throw(error.error || 'Server error on requesting informingMatchFound'))
+      catchError((error: any) => Observable.throw(error.error))
     );
   }
 
@@ -77,7 +78,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting getMatchById'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -96,7 +97,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting getBeginner'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -115,7 +116,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting getPlayers'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -137,7 +138,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting makeMove'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -156,7 +157,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting setMatchDrawn'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -175,7 +176,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting setMatchLoss'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -196,7 +197,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting communicateLoss'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -216,7 +217,7 @@ export class MatchesService {
     }, options).pipe(
       tap(() => {
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting requestState'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -237,7 +238,7 @@ export class MatchesService {
     }, options).pipe(
       tap(() => {
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting sendState'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 
@@ -256,7 +257,7 @@ export class MatchesService {
       tap((response) => {
         response
       }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting showMatches'))
+      catchError((error: any) => throwError(error.error))
     );
   }
 

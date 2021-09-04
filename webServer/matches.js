@@ -17,10 +17,6 @@ var matchSchema = new mongoose_1.Schema({
         type: mongoose.SchemaTypes.String,
         required: false,
     },
-    spectators: [{
-            type: mongoose.SchemaTypes.Mixed,
-            required: true
-        }],
     winner: {
         type: mongoose.SchemaTypes.String,
         required: false,
@@ -34,15 +30,16 @@ var matchSchema = new mongoose_1.Schema({
         required: false,
         default: false
     },
+    private: {
+        type: mongoose.SchemaTypes.Boolean,
+        required: true,
+    },
 });
 matchSchema.methods.getPlayers = function () {
     const players = new String[2];
     players[0] = this.player1;
     players[1] = this.player2;
     return players;
-};
-matchSchema.methods.getSpectators = function () {
-    return this.spectators[0];
 };
 matchSchema.methods.getWinner = function () {
     return this.winner;

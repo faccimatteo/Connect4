@@ -10,7 +10,7 @@ import { MessagesService } from '../messages.service';
 })
 export class FriendshipRequestsComponent implements OnInit {
 
-  public friendRequests = []
+  public friendRequests:string[] = []
   public error = ''
   constructor(private clientHttp:ClientHttpService, private _snackBar:MatSnackBar, private messagesService:MessagesService) { }
 
@@ -30,7 +30,7 @@ export class FriendshipRequestsComponent implements OnInit {
       delete this.friendRequests[this.friendRequests.indexOf(username)]
 
       // We inform the user that he's our friend now
-      this.messagesService.send_message('accepted', 'friendshipRequests', '', username).subscribe(() => {
+      this.messagesService.friend_requests('accepted', 'friendshipRequests', '', username).subscribe(() => {
         // After the operation we reload the page
       })
 

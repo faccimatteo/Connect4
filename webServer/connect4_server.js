@@ -522,8 +522,8 @@ app.route("/matches").get(auth, (req, res, next) => {
 }).post(auth, (req, res, next) => {
     // We insert a new match from the data included in the body
     // after checking if all the required fields are present
-    if (req.body.player1 == null || req.body.player2 == null)
-        return next({ statusCode: 404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2" });
+    if (req.body.player1 == null || req.body.player2 == null || req.body.private == null)
+        return next({ statusCode: 404, error: true, errormessage: "Check fields in body request. Fields that must be inserted are: player1, player2, private" });
     // Checking if players are inserted into a DB
     user.getModel().findOne({ username: req.body.player1 }).then((result) => {
         if (result == null)
@@ -554,42 +554,20 @@ app.route("/matches").get(auth, (req, res, next) => {
                     }
                     // The users are checked, now we can correctly insert the match
                     const players = [req.body.player1, req.body.player2];
-                    if (req.body.winner != null || req.body.loser != null) {
-                        if (players.includes(req.body.winner)) {
-                            match.getModel().create({
-                                player1: req.body.player1,
-                                player2: req.body.player2,
-                                turn: null,
-                                spectators: req.body.spectators,
-                                winner: req.body.winner,
-                                loser: req.body.loser,
-                                ended: true
-                            }).then((matchCreated) => {
-                                return res.status(200).json({ message: 'New ended match correctly added', id: matchCreated._id });
-                            }).catch((reason) => {
-                                return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                            });
-                        }
-                        else {
-                            return next({ statusCode: 404, error: true, errormessage: "winner field must be one of the two players" });
-                        }
-                    }
-                    else {
-                        const index = Math.floor(Math.random() * 2);
-                        match.getModel().create({
-                            player1: req.body.player1,
-                            player2: req.body.player2,
-                            turn: players[index],
-                            spectators: [],
-                            winner: null,
-                            loser: null,
-                            ended: false
-                        }).then((matchCreated) => {
-                            return res.status(200).json({ message: 'New match correctly added', id: matchCreated._id, match: matchCreated });
-                        }).catch((reason) => {
-                            return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
-                        });
-                    }
+                    const index = Math.floor(Math.random() * 2);
+                    match.getModel().create({
+                        player1: req.body.player1,
+                        player2: req.body.player2,
+                        turn: players[index],
+                        winner: null,
+                        loser: null,
+                        ended: false,
+                        private: req.body.private,
+                    }).then((matchCreated) => {
+                        return res.status(200).json({ message: 'New match correctly added', id: matchCreated._id, match: matchCreated });
+                    }).catch((reason) => {
+                        return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
+                    });
                 }
             }).catch((reason) => {
                 return next({ statusCode: 404, error: true, errormessage: "DB error: " + reason });
@@ -599,8 +577,8 @@ app.route("/matches").get(auth, (req, res, next) => {
 });
 // Return all the active matches
 app.get("/activeMatches", auth, (req, res, next) => {
-    // We find all the matches and we output them in JSON format
-    match.getModel().find({ ended: false }).then((matches) => {
+    // We find all the not ended matches and not private then we output them in JSON format
+    match.getModel().find({ ended: false, private: false }).then((matches) => {
         const matchesArray = [];
         matches.forEach(match => {
             matchesArray.push([match._id, match.player1, match.player2]);
@@ -922,19 +900,11 @@ app.post("/messages", auth, (req, res, next) => {
         return next({ statusCode: 404, error: true, errormessage: "Body must contain message, id and type fields" });
     }
     else {
-        if (req.body.message == 'accepted') {
-            pusher.trigger("chat" + req.body.id + req.body.type, "friendshipRequests", {
-                message: req.body.message,
-                to: req.body.receiver
-            });
-        }
-        else {
-            pusher.trigger("chat" + req.body.id + req.body.type, "message", {
-                username: req.user.username,
-                message: req.body.message,
-                to: req.body.receiver
-            });
-        }
+        pusher.trigger("chat" + req.body.id + req.body.type, "message", {
+            username: req.user.username,
+            message: req.body.message,
+            to: req.body.receiver
+        });
         return res.status(200).json({ username: req.user.username, message: req.body.message });
     }
 });
@@ -1099,6 +1069,20 @@ app.post("/sendState", auth, (req, res, next) => {
         }).catch((error) => {
             return next({ statusCode: error.code, error: true, errormessage: "Cannot connect to DB." });
         });
+    }
+});
+// Pusher chat API to manage friends requests
+app.post("/friendRequests", auth, (req, res, next) => {
+    if (req.body.message == null || req.body.id == null || req.body.type == null) {
+        return next({ statusCode: 404, error: true, errormessage: "Body must contain message, id and type fields" });
+    }
+    else {
+        pusher.trigger("chat" + req.body.id + req.body.type, "friendChannel", {
+            username: req.user.username,
+            message: req.body.message,
+            to: req.body.receiver
+        });
+        return res.status(200).json({ username: req.user.username, message: req.body.message });
     }
 });
 // Using HTTP basic authentication strategy with passport middleware.

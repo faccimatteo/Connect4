@@ -29,4 +29,14 @@ export class MessagesService {
       receiver: receiver
     }, this.options)
   }
+
+  friend_requests(message:string, id:string, type:string, receiver:string){
+
+    return this.http.post(this.clientHttp.url + '/friendRequests',{
+      message: message,
+      id: id,
+      type: type,
+      receiver: receiver
+    }, this.options)
+  }
 }

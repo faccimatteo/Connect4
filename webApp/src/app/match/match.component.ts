@@ -39,14 +39,13 @@ export class MatchComponent implements OnInit, OnDestroy {
     private clientHttp: ClientHttpService,
     private audioService: AudioService,
     private router: Router,
-    private app: AppComponent
   ) {}
   @HostBinding('class') public cssClass!: string;
 
   ngOnInit(): void {
-    this.app.ngOnInit()
     this.matches.getMatchById(this.id).subscribe((response) => {
       this.isEnded = response.ended;
+      this.connect4Service.canLeaveTheGame = false;
       this.connect4Service.diskAddedSubject.subscribe(() => {
         const gameFinishInfo = this.connect4Service.checkGameFinished();
 
@@ -80,6 +79,7 @@ export class MatchComponent implements OnInit, OnDestroy {
   beforeUnloadHandler(event) {
     // If we quit during the game
     this.matches.communicateLoss(this.id).subscribe(() => {
+      this.connect4Service.canLeaveTheGame = true;
       this.isEnded = true;
       this.router.navigate(['/home']);
     });
@@ -96,7 +96,8 @@ export class MatchDialogData {
     @Inject(MAT_DIALOG_DATA) public data: MatchDialogData,
     private router: Router,
     private matches: MatchesService,
-    private matchcomponent: MatchComponent) {}
+    private matchcomponent: MatchComponent,
+    private connect4service: Connect4Service) {}
 
   onNoClick(): void {
     this.dialogRef.close();
@@ -106,6 +107,7 @@ export class MatchDialogData {
   onQuit(){
     this.matches.communicateLoss(this.data.matchId).subscribe(() => {
       this.dialogRef.close();
+      this.connect4service.canLeaveTheGame = true;
       this.matchcomponent.isEnded = true;
       this.router.navigate(['/home']);
     })

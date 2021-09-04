@@ -1,4 +1,4 @@
 <div id='container'>
-  <button mat-raised-button color="primary" (click)="searchMatch()">Cerca partita</button>
+  <button mat-raised-button color="primary" disabled="{{this.connect4Service.cannotSearchMatch}}" (click)="searchMatch()">Cerca partita</button>
 </div>
 

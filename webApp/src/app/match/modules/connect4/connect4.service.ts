@@ -31,13 +31,14 @@ export class Connect4Service {
   private pusher;
   private channel;
   public canLeaveTheGame: Boolean = true;
+  public cannotSearchMatch: Boolean = false;
 
   constructor(private store: Store, private matches:MatchesService, private clientHttp:ClientHttpService, private audioService:AudioService) {
       this.winConditionsArray = this.getWinConditionsArray();
   }
 
   public gameFinish(gameFinishInfo: GameOverInfo): void {
-    this.canLeaveTheGame = false;
+    this.canLeaveTheGame = true;
     this.matches.getPlayers(this.matchId).subscribe((res) => {
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
       this.gameStatusSubject.next({ status: 'gameOver' });

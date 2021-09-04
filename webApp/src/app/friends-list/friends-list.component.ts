@@ -7,7 +7,8 @@ import { ClientHttpService } from '../client-http.service';
 interface stats {
   win:number,
   loss:number,
-  draw:number
+  draw:number,
+  matchplayed: number
 }
 
 interface User {
@@ -23,15 +24,13 @@ interface User {
 export class FriendsListComponent{
 
   dataSource:User[] = [];
-  displayedColumns = ['username','win','loss','draw'];
+  displayedColumns = ['username','win','loss','draw', 'matchplayed'];
 
 
   constructor(private clientHttp: ClientHttpService) {
-    //this.dataSource = new FriendsDataSource(this.clientHttp)
   }
 
   ngOnInit() {
-    //Code snippet without using StatsDataSource
     if(!this.clientHttp.is_moderator()){
       this.clientHttp.get_friends_with_stats().subscribe(
         (response) =>
@@ -44,6 +43,7 @@ export class FriendsListComponent{
                 win: element.stats.win,
                 loss: element.stats.loss,
                 draw: element.stats.draw,
+                matchplayed : element.stats.win + element.stats.loss + element.stats.draw,
               }
             })
           });
@@ -61,6 +61,7 @@ export class FriendsListComponent{
                 win: element.stats.win,
                 loss: element.stats.loss,
                 draw: element.stats.draw,
+                matchplayed : element.stats.win + element.stats.loss + element.stats.draw,
               }
             })
           });
@@ -69,20 +70,3 @@ export class FriendsListComponent{
     }
   }
 }
-
-/*
-class FriendsDataSource extends DataSource<User> {
-
-    constructor(private http: ClientHttpService) {
-      super();
-    }
-
-    connect(): Observable<User[]> {
-      return this.http.get_friends_with_stats();
-    }
-
-    disconnect() {}
-}*/
-
-
-

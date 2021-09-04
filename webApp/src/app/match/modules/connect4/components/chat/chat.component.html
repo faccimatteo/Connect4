@@ -4,7 +4,7 @@
       <mat-card-title >Benvenuto nella chat, {{username}}!</mat-card-title>
     </mat-card-header>
       <!--global chat-->
-      <div *ngIf="this.id == 'global'">
+      <div *ngIf="this.id == 'Globale'">
         <cdk-virtual-scroll-viewport itemSize="50" class="viewport">
           <div *ngFor="let msg of messages[this.selected]" class="item" style="text-align: left;">
             <div class="d-flex w-100 align-items-center justify-content-between">
@@ -15,7 +15,7 @@
         </cdk-virtual-scroll-viewport>
       </div>
       <!--match chat-->
-      <div *ngIf="this.id != 'global'">
+      <div *ngIf="this.id != 'Globale'">
         <cdk-virtual-scroll-viewport  itemSize="50" class="viewport">
           <div *ngFor="let msg of messages" class="item" style="text-align: left;">
             <div class="d-flex w-100 align-items-center justify-content-between">
@@ -27,15 +27,22 @@
       </div>
     <mat-card-actions>
       <div class='row'>
-        <div class="col col-lg-7 col-md-7 col-sm-7">
-          <form (submit)='submit()'>
-            <input class='form-control' placeholder='Scrivi qualcosa..' [value]="message" (change)="message = $event.target.value" />
-          </form>
+        <form (submit)='submit()'>
+          <input class='form-control' placeholder='Scrivi qualcosa..' [value]="message" (change)="message = $event.target.value" />
+        </form>
+      </div>
+      <div class='row'>
+        <div class="col col-lg-3 col-md-3 col-sm-3">
         </div>
-        <div class="col col-lg-5 col-md-5 col-sm-5">
+        <div class="col col-lg-3 col-md-3 col-sm-3">
           <mat-select [(value)]="this.selected">
             <mat-option *ngFor="let chat of this.chat_channels" value="{{chat}}">{{chat}}</mat-option>
           </mat-select>
+        </div>
+        <div class="col col-lg-3 col-md-3 col-sm-3">
+        </div>
+        <div *ngIf="this.selected != 'Globale'" class="col col-lg-3 col-md-3 col-sm-3">
+          <button mat-raised-button color="primary" (click)="this.challenge()">Sfida</button>
         </div>
       </div>
     </mat-card-actions>

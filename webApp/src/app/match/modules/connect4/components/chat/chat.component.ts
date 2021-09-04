@@ -5,6 +5,8 @@ import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { MessagesService } from '../../../../../messages.service';
 import { ViewChild } from '@angular/core';
 import { MatchesService } from 'src/app/matches.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Connect4Service } from '../../connect4.service';
 
 @Component({
   selector: 'app-chat',
@@ -22,10 +24,11 @@ export class ChatComponent implements OnInit{
   message = '';
   private pusher;
   private postfix = '';
-  public chat_channels:string[] = ['global']
-  public selected = 'global'
+  private snackBarRef;
+  public chat_channels:string[] = ['Globale']
+  public selected = 'Globale'
 
-  constructor(private messagesService:MessagesService, private clientHttp:ClientHttpService, private matches:MatchesService) {
+  constructor(private messagesService:MessagesService, private _snackBar: MatSnackBar, private clientHttp:ClientHttpService, private matches:MatchesService, private connect4Service:Connect4Service) {
     this.username = this.clientHttp.get_username()
     // Using Pusher for real time chat
     this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
@@ -35,7 +38,7 @@ export class ChatComponent implements OnInit{
 
   ngOnInit(): void {
     // When we are in global chat in the homepage
-    if(this.id != "global"){
+    if(this.id != "Globale"){
         this.messages = []
         // Checking if the palayer is one of the two players or not
         this.matches.getPlayers(this.id).subscribe((result) => {
@@ -50,45 +53,75 @@ export class ChatComponent implements OnInit{
         })
 
     }else{
-      this.messages = {'global':[]}
-      this.clientHttp.get_friends_with_stats().subscribe((response)=>{
+      this.messages = {'Globale':[]}
 
-        var channel = this.pusher.subscribe('chatfriendshipRequests');
-        // We are listening if a user have accepted our friend request
-        channel.bind('friendshipRequests', data =>{
-          if (data.to == this.clientHttp.get_username())
-            console.log("richiesta accettata")
-            if(data.message == 'accepted')
-              this.ngOnInit()
-        })
+      if(!this.clientHttp.is_moderator()){
+        this.clientHttp.get_friends_with_stats().subscribe((response)=>{
 
-        // We subscribe to a global channel
-        var channel = this.pusher.subscribe('chat' + this.id);
-        channel.bind('message', data =>{
-          this.messages['global'].push(data);
-          this.viewPort.scrollToIndex((this.messages['global'].length));
-        });
 
-        (response.result).forEach(element => {
-          this.chat_channels.push(element.username)
-          this.messages[element.username] = []
-
-          // As channel we use user-friend id
-          var channel = this.pusher.subscribe('chat' + this.clientHttp.get_username() + element.username);
+          // We subscribe to a global channel
+          var channel = this.pusher.subscribe('chat' + this.id);
           channel.bind('message', data =>{
-            this.messages[data.to].push(data);
-            this.viewPort.scrollToIndex((this.messages[data.to].length));
+            this.messages['Globale'].push(data);
+            this.viewPort.scrollToIndex((this.messages['Globale'].length));
+          });
+
+          (response.result).forEach(element => {
+            this.chat_channels.push(element.username)
+            this.messages[element.username] = []
+
+            // As channel we use user-friend id
+            var channel = this.pusher.subscribe('chat' + this.clientHttp.get_username() + element.username);
+            channel.bind('message', data =>{
+              this.messages[data.to].push(data);
+              this.viewPort.scrollToIndex((this.messages[data.to].length));
+            })
+
+            // We are listening if a user have accepted our friend request
+            channel.bind('friendChannel', data =>{
+              if(data.message == 'accepted'){
+                // We update the chat component
+                this.ngOnInit();
+              }
+              else if(data.message == 'invite'){
+                console.log("invito ricevuto")
+                this.snackBarRef = this._snackBar.open(data.username + ' ti ha invitato ad un match', 'Accetta', {
+                  duration: 5000
+                });
+              }
+            })
           })
         })
-        //TODO: da fare
-        // We are listening if a user have sent us a friend request
-      })
-    }
+      }else{
+        this.clientHttp.get_users_with_stats().subscribe((response)=>{
+          // We subscribe to a global channel
+          var channel = this.pusher.subscribe('chat' + this.id);
+          channel.bind('message', data =>{
+            this.messages['Globale'].push(data);
+            this.viewPort.scrollToIndex((this.messages['Globale'].length));
+          });
 
+          (response.result).forEach(element => {
+            this.chat_channels.push(element.username)
+            this.messages[element.username] = []
+
+            // As channel we use user-friend id
+            var channel = this.pusher.subscribe('chat' + this.clientHttp.get_username() + element.username);
+
+            // Event binding for messages
+            channel.bind('message', data =>{
+              this.messages[data.to].push(data);
+              this.viewPort.scrollToIndex((this.messages[data.to].length));
+            })
+          })
+        })
+      }
+
+    }
   }
 
   submit():void{
-    if(this.id != 'global'){
+    if(this.id != 'Globale'){
       // We have a unique id where we send a message
       this.messagesService.send_message(this.message, this.id, this.postfix,'')
       .subscribe(
@@ -96,7 +129,7 @@ export class ChatComponent implements OnInit{
           this.message = '';
         })
     }else{
-      if(this.selected == 'global'){
+      if(this.selected == 'Globale'){
         this.messagesService.send_message(this.message, this.id, this.postfix, this.selected)
         .subscribe(
           ()=>{
@@ -120,6 +153,23 @@ export class ChatComponent implements OnInit{
     }
 
 
+  }
+
+  // We challenge the selected friend
+  challenge(){
+    this.messagesService.friend_requests('invite', this.selected + this.clientHttp.get_username(), '', this.clientHttp.get_username()).subscribe(() => {
+      this.connect4Service.cannotSearchMatch = true;
+
+      this.snackBarRef = this._snackBar.open('Invito inviato', undefined, {duration:5000});
+
+
+
+      // We lock the match search if we invited a friend
+      this.snackBarRef.afterDismissed().subscribe(() => {
+        this.connect4Service.cannotSearchMatch = false;
+      });
+
+    })
   }
 
 }

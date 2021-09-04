@@ -16,7 +16,7 @@ import { SignupComponent } from './signup/signup.component';
 import { StatsComponent } from './stats/stats.component';
 
 const routes: Routes = [
-  { path: '',   redirectTo: 'login', pathMatch: 'full' },
+  { path: '',   redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: HomeComponent, canActivate:[AuthguardService]},
   { path: 'home/stats', component: StatsComponent, canActivate:[AuthguardService]},
   { path: 'home/friends', component: FriendsListComponent, canActivate:[AuthguardService]},
