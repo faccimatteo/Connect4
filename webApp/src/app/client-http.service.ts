@@ -124,25 +124,6 @@ export class ClientHttpService {
     );
   }
 
-  isLookingForAMatch():Observable<any>{
-
-    // Creating header for the get request
-    const options = {
-      headers: new HttpHeaders({
-        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
-        'Cache-Control': 'no-cache',
-        'Content-Type':  'application/json',
-      })
-    };
-
-    return this.http.get(this.url + '/users/getLookingForAMatch', options).pipe(
-      tap(() => {
-
-      }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting isLookingForAMatch'))
-    );
-  }
-
   setLookingForAMatch(value:boolean):Observable<any>{
 
     // Creating header for the get request
