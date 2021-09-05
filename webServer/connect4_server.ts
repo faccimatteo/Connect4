@@ -377,9 +377,11 @@ app.get('/users/allUserWithStats', auth, async (req,res,next) => {
           Promise.all(myPromises).then(()=>{
             return res.status(200).json({result:users_with_stats}); 
           }).catch((reason)=>{
-            return next({ statusCode:500, error: true, errormessage: "DB error: " + reason});
+            return next({ statusCode:500, error: true, errormessage: "Error while trying to get value from a promise: " + reason});
           })
-        })
+        }).catch((reason)=>{
+          return next({ statusCode:500, error: true, errormessage: "Error while trying to get user from DB: " + reason}); 
+        })      
       })
   } 
 });
@@ -409,7 +411,7 @@ app.route('/users/:username').get((req,res,next) => {
         user.getModel().deleteOne({username:req.params.username}).then(()=>{
           return res.status(200).json('User ' + req.params.username + ' successfully deleted from the DB'); 
         }).catch((reason)=>{
-          return next({ statusCode:500, error: true, errormessage: "DB error: " + reason}); 
+          return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + " : " + reason}); 
         })
       }
     })
@@ -433,11 +435,11 @@ app.get('/users/:username/stats', auth, (req,res,next) => {
           return res.status(200).json({stats:stats});
   
       }).catch((reason)=>{
-        return next({ statusCode:500, error: true, errormessage: "DB error: " + reason}); 
+        return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + " and his stats: " + reason}); 
       })
     }
   }).catch((error)=>{
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + error}); 
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + " friends: " + error}); 
   })
 
 });
@@ -476,7 +478,7 @@ app.get('/users/:username/friends', auth, (req,res,next) => {
         return res.status(200).json(user.friends);
       
     }).catch((reason)=>{
-      return next({ statusCode:500, error: true, errormessage: "DB error: " + reason}); 
+      return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + " friends: " + reason}); 
     })
   } 
 
@@ -509,14 +511,14 @@ app.get('/users/sendFriendship/:username', auth, (req,res,next) => {
         user.getModel().updateOne({ username: req.params.username}, {$push: {pendingRequests: req.user.username}}).then(()=>{
           return res.status(200).json({message: "Friend request sent to " + req.params.username})
         }).catch((error)=>{
-          return next({ statusCode:500, error: true, errormessage: "Couldn't send friend request to user " + req.params.username})
+          return next({ statusCode:500, error: true, errormessage: "Couldn't send friend request to user " + req.params.username + ". " + error})
         })
       }
     }).catch((error)=>{
-      return next({ statusCode:500, error: true, errormessage: "DB error " + error})
+      return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + " pending requests: " + error})
     })
   }).catch((error)=>{
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + error})
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + ": " + error})
   })
 })
 
@@ -527,14 +529,25 @@ app.get('/users/acceptFriendship/:friend', auth, (req,res,next) => {
     user.getModel().findOne({username:req.user.username}).select({pendingRequests:1}).then((friendRequestsList)=>{
       // We update the friend list of the user 
       if ((friendRequestsList.pendingRequests).includes(friendUser.username)){
-        user.getModel().findByIdAndUpdate(req.user.id, {$push: {friends: friendUser.username}} ).then(()=>{
-          user.getModel().updateOne({username: friendUser.username}, {$push: {friends: req.user.username}} ).then(()=>{
-            user.getModel().findByIdAndUpdate(req.user.id, {$pull: {pendingRequests: friendUser.username}}).then(()=>{
-              return res.status(200).json({message: "User " + req.user.username + " added friend " + friendUser.username + " correctly" })
+        user.getModel().findByIdAndUpdate(req.user.id, {$push: {friends: friendUser.username}}, (err)=>{
+          if(err != null)
+            return next({ statusCode:500, error: true, errormessage: "Error while trying to update user " + req.user.username + " friends: " + err}); 
+          else{
+            user.getModel().updateOne({username: friendUser.username}, {$push: {friends: req.user.username}},null, (err)=>{
+              if (err != null){
+                return next({ statusCode:500, error: true, errormessage: "Error while trying to update user " + friendUser.username + " friends: " + err}); 
+              }
+              else{
+                user.getModel().findByIdAndUpdate(req.user.id, {$pull: {pendingRequests: friendUser.username}},(err)=>{
+                  if(err != null)
+                    return next({ statusCode:500, error: true, errormessage: "Error while trying to update user " + req.user.username + " pending requests: " + err}); 
+                  else{
+                    return res.status(200).json({message: "User " + req.user.username + " added friend " + friendUser.username + " correctly" })
+                  }
+                })
+              } 
             })
-          })
-        }).catch((error)=>{
-          return next({ statusCode:500, error: true, errormessage: "DB error: " + error}); 
+          }  
         })
       }
       else
@@ -697,26 +710,32 @@ app.get("/matches/:id/setDraw", auth, (req,res,next) => {
     else{
 
       // Checking if players are inserted into a DB
-      match.getModel().findOne({_id:myId}).select({player1:1,playe2:1}).then((result)=>{
+      match.getModel().findOne({_id:myId}).select({player1:1,player2:1, ended:1}).then((result)=>{
         const players = [result.player1, result.player2]
-          
-          // If the control flow pass, set the winner of the match
-          match.getModel().updateOne({ _id:myId}, { $set: { winner: null, ended: true} }).then(()=>{
-            
-            user.getModel().updateOne({username:result.player1}, { $inc: { draw:1 }}).then(()=>{
-              user.getModel().updateOne({username:result.player2}, { $inc: { draw:1 }}).then(()=>{
-                return res.status(200).json({message: 'Added draw to ' + result.player1 + ' and ' + result.player2 + ' then setted the match ' + myId + ' drawn.'});
+        if(result.ended)
+          return next({ statusCode:501, error: true, errormessage: "Cannot set winner/loser of a match aready ended"});
+        else{
+          if(players.includes(req.user.username)){
+            // If the control flow pass, set the winner of the match
+            match.getModel().updateOne({ _id:myId}, { $set: { winner: null, ended: true} }).then(()=>{
+              
+              user.getModel().updateOne({username:result.player1}, { $inc: { draw:1 }}).then(()=>{
+                user.getModel().updateOne({username:result.player2}, { $inc: { draw:1 }}).then(()=>{
+                  return res.status(200).json({message: 'Added draw to ' + result.player1 + ' and ' + result.player2 + ' then setted the match ' + myId + ' drawn.'});
+                }).catch((err)=>{
+                  return next({ statusCode:500, error: true, errormessage: "Couldn't update " + result.player2 + " stats: " + err});
+                })
               }).catch((err)=>{
                 return next({ statusCode:500, error: true, errormessage: "Couldn't update " + result.player1 + " stats: " + err});
               })
+  
             }).catch((err)=>{
-              return next({ statusCode:500, error: true, errormessage: "Couldn't update " + result.player1 + " stats: " + err});
-            })
-
-          }).catch((err)=>{
-              return next({ statusCode:500, error: true, errormessage: "Error while trying to update match " + req.params.id + " : " + err});
-          });
-          
+                return next({ statusCode:500, error: true, errormessage: "Error while trying to update match " + req.params.id + " : " + err});
+            });
+          }else{
+            return next({ statusCode:401, error: true, errormessage: "You are not authorized to set the draw"});
+          }
+        } 
       }).catch((err)=>{
         return next({ statusCode:500, error: true, errormessage: "Error while trying to find match " + req.params.id + " : " + err});
       });    
@@ -750,7 +769,7 @@ app.get("/matches/:id/setLoser", auth, (req,res,next) => {
           const opponent = players[players.indexOf(req.user.username) == 1 ? 0 : 1];
 
           if(!players.includes(req.user.username))
-            return next({ statusCode:501, error: true, errormessage: "The user you are trying to insert is not present into the db or is not equal to one of the two match's players."});
+            return next({ statusCode:501, error: true, errormessage: "The user is not equal to one of the two match's players."});
           else{
             // incrementing user losses
             user.getModel().updateOne({username:req.user.username}, { $inc: { loss: 1 }}, null, (err) =>{
@@ -1046,11 +1065,7 @@ app.use( (req,res,next) => {
 // Connect to mongodb and launch the HTTP server trough Express
 // by using async promises
 mongoose.connect( 'mongodb://localhost:27017/connect4' , { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify:false })
-.then( 
-  () => {
-    return user.getModel().findOne({});
-  }
-).then(      
+.then(      
   () => {
     let server = http.createServer(app);
 

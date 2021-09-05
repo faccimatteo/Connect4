@@ -18,6 +18,7 @@ export class AppComponent {
   constructor(public clientHttp:ClientHttpService, public connect4service: Connect4Service){}
 
   ngOnInit(){
+    this.connect4service.canLeaveTheGame = false;
   }
 
   is_allowed():boolean{

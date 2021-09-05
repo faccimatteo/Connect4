@@ -40,13 +40,17 @@ export class Connect4Service {
   public gameFinish(gameFinishInfo: GameOverInfo): void {
     this.canLeaveTheGame = false;
     this.matches.getPlayers(this.matchId).subscribe((res) => {
+
       this.store.dispatch(new SetGameOver(gameFinishInfo.byPlayer, gameFinishInfo.winConditionResolved));
       this.gameStatusSubject.next({ status: 'gameOver' });
-
       // The player defeated update the status of the match
-      if(this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]){
+      if((this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]) && res.players.includes(this.clientHttp.get_username()) && gameFinishInfo.winConditionResolved != null){
         this.defeat();
-      }else
+      }else if((this.clientHttp.get_username() != res.players[gameFinishInfo.byPlayer-1]) && res.players.includes(this.clientHttp.get_username()) && gameFinishInfo.winConditionResolved == null){
+        console.log(this.clientHttp.get_username())
+        this.matches.setMatchDrawn(this.matchId).subscribe()
+      }
+      else if(gameFinishInfo.winConditionResolved != null)
         this.audioService.playAudio('victory');
 
     })

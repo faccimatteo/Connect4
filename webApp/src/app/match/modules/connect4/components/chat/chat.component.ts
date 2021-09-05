@@ -188,6 +188,7 @@ export class ChatComponent implements OnInit{
       // We lock the match search if we invited a friend
       this.snackBarRef.afterDismissed().subscribe(() => {
         this.connect4Service.cannotSearchMatch = false;
+        console.log(this.connect4Service.cannotSearchMatch)
       });
 
     })
