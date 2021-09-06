@@ -86,47 +86,11 @@ userSchema.methods.validatePassword = function (pwd) {
     var digest = hmac.digest('hex');
     return (this.digest === digest);
 };
-userSchema.methods.hasModeratorRole = function () {
-    return this.moderator;
-};
-userSchema.methods.setModerator = function () {
-    if (!this.hasModeratorRole())
-        this.moderator = true;
-};
 // At the moment of creation, the user has most of the fields empty
 userSchema.methods.setDefault = function () {
     this.win = 0;
     this.loss = 0;
     this.draw = 0;
-};
-userSchema.methods.getName = function () {
-    return this.name;
-};
-userSchema.methods.getSurname = function () {
-    return this.surname;
-};
-userSchema.methods.getWin = function () {
-    return this.win;
-};
-userSchema.methods.getLoss = function () {
-    return this.loss;
-};
-userSchema.methods.getDraw = function () {
-    return this.draw;
-};
-userSchema.methods.getFriends = function () {
-    return this.friends;
-};
-userSchema.methods.getPendingRequests = function () {
-    return this.pendingRequests;
-};
-userSchema.methods.addFriend = function (user) {
-    if (this.pendingRequests.includes(user.username)) {
-        this.friends.push(user.username);
-        return true;
-    }
-    else
-        return false;
 };
 // Return the schema of the db 'User' in MongoDB
 function getSchema() { return userSchema; }

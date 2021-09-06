@@ -10,11 +10,6 @@ export interface Match extends Document{
     loser: string,
     ended: boolean,
     private: boolean,
-    getPlayers: ()=>string[],
-    getWinner: ()=>string,
-    getLoser: ()=>string,
-    setEnding: ()=>void,
-    hasEnded: ()=>boolean
 }
 
 // Defining the schema match to map it into MongoDB
@@ -50,31 +45,6 @@ var matchSchema = new Schema<Match>({
     },
     
 })
-
-matchSchema.methods.getPlayers = function():string[] {
-    const players:string[] = new String[2];
-    players[0] = this.player1;
-    players[1] = this.player2;
-    return players;
-
-}
-
-
-matchSchema.methods.getWinner = function():string{
-    return this.winner;
-}
-
-matchSchema.methods.getLoser = function():string{
-    return this.loser;
-}
-
-matchSchema.methods.setEnding = function():void{
-    this.ended = true;
-}
-
-matchSchema.methods.hasEnded = function():boolean{
-    return this.ended;
-}
 
 
 // Return the schema of the db 'Match' in MongoDB

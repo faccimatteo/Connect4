@@ -35,24 +35,6 @@ var matchSchema = new mongoose_1.Schema({
         required: true,
     },
 });
-matchSchema.methods.getPlayers = function () {
-    const players = new String[2];
-    players[0] = this.player1;
-    players[1] = this.player2;
-    return players;
-};
-matchSchema.methods.getWinner = function () {
-    return this.winner;
-};
-matchSchema.methods.getLoser = function () {
-    return this.loser;
-};
-matchSchema.methods.setEnding = function () {
-    this.ended = true;
-};
-matchSchema.methods.hasEnded = function () {
-    return this.ended;
-};
 // Return the schema of the db 'Match' in MongoDB
 function getSchema() { return matchSchema; }
 exports.getSchema = getSchema;

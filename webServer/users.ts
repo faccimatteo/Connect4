@@ -22,17 +22,7 @@ export interface User extends Document {
     isLookingForAMatch: boolean,
     setPassword: (pwd:string)=>void,
     validatePassword: (pwd:string)=>boolean,
-    hasModeratorRole: ()=>boolean,
-    setModerator: ()=>void,
     setDefault: ()=>void,
-    getName: ()=>string,
-    getSurname: ()=>string,
-    getWin: ()=>number,
-    getLoss: ()=>number,
-    getDraw: ()=>number,
-    getFriends: ()=>string[],
-    getPendingRequests: ()=>string[],
-    addFriend: (user:User)=>boolean
 }
 
 // Defining the schema User to map it into MongoDB
@@ -122,58 +112,12 @@ userSchema.methods.validatePassword = function( pwd:string ):boolean {
     return (this.digest === digest);
 }
 
-userSchema.methods.hasModeratorRole = function(): boolean {
-    return this.moderator;
-}
-
-userSchema.methods.setModerator = function() {
-    if( !this.hasModeratorRole() )
-        this.moderator = true;
-}
 
 // At the moment of creation, the user has most of the fields empty
 userSchema.methods.setDefault = function(){
     this.win = 0;
     this.loss = 0;
     this.draw = 0;
-}
-
-userSchema.methods.getName = function(): string {
-    return this.name;
-}
-
-userSchema.methods.getSurname = function(): string {
-    return this.surname;
-}
-
-userSchema.methods.getWin = function(): number {
-    return this.win;
-}
-
-userSchema.methods.getLoss = function(): number {
-    return this.loss;
-}
-
-userSchema.methods.getDraw = function(): number {
-    return this.draw;
-}
-
-userSchema.methods.getFriends = function(): string[] {
-    return this.friends;
-}
-
-userSchema.methods.getPendingRequests = function(): string[] {
-    return this.pendingRequests;
-}
-
-userSchema.methods.addFriend = function(user:User):boolean {
-    if(this.pendingRequests.includes(user.username)){
-        this.friends.push(user.username);
-        return true;
-    }
-    else
-        return false;
-    
 }
 
 // Return the schema of the db 'User' in MongoDB
