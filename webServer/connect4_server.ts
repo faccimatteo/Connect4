@@ -10,7 +10,6 @@ if( !process.env.JWT_SECRET ) {
 }
 
 import fs = require('fs');                      // File System module
-import path = require('path');                  // Provides utilities for working with file and directory paths
 import http = require('http');                  // HTTP module
 import https = require('https');                // HTTPS module
 import colors = require('colors');              // Colors module for debugging 
@@ -29,7 +28,7 @@ import passportHTTP = require('passport-http');  // implements Basic and Digest 
 import jsonwebtoken = require('jsonwebtoken');  // JWT generation
 import jwt = require('express-jwt');            // JWT parsing middleware for express
 
-import cors = require('cors');                  // Enable CORS middleware
+import cors = require('cors');                  // Enable CORS middleware 
 
 declare global {
   namespace Express {
@@ -87,7 +86,14 @@ app.get("/", (req,res) => {
   
   res.status(200).json({
     api_version: "0.0.1",
-    endpoints: ["/users", "/matches", "activeMatches", "/messages", "/matchFound", "/doMove", "/communicateLoss", "/requestState", "/sendState", "/friendRequests", "/login"]
+    endpoints: [
+                "/users", '/users/addModerator', '/users/searchForUsers', '/users/setModerator/', '/users/:username/profilepic', '/users/setFirstAccess', 
+                '/users/pairUserForAMatch', '/users/friendsWithStats', '/users/allUserWithStats', '/users/:username', '/users/:username/stats',
+                '/users/setLookingForAMatch/:value', '/users/:username/friends', '/users/:username/friendsRequests','/users/sendFriendship/:username',
+                '/users/acceptFriendship/:friend', '/users/rejectFriendship/:friend', 
+                "/matches", "/activeMatches", "/matches/:id", "/matches/:id/players", "/matches/:id/turn", "/matches/:id/setDraw","/matches/:id/setLoser",
+                "/messages", "/matchFound", "/doMove", "/communicateLoss", "/requestState", "/sendState", "/friendRequests", 
+                "/login"]
   })
 });
 
@@ -386,7 +392,7 @@ app.get('/users/allUserWithStats', auth, async (req,res,next) => {
   } 
 });
 
-/// Return a user with a certain username
+// Return a user with a certain username
 app.route('/users/:username').get((req,res,next) => {
 
   user.getModel().findOne({username: req.params.username}).then((response)=>{
@@ -409,7 +415,7 @@ app.route('/users/:username').get((req,res,next) => {
         return next({ statusCode:404, error: true, errormessage: "The user you are looking for is not present into the DB"}); 
       else{
         user.getModel().deleteOne({username:req.params.username}).then(()=>{
-          return res.status(200).json('User ' + req.params.username + ' successfully deleted from the DB'); 
+          return res.status(200).json({"message": 'User ' + req.params.username + ' successfully deleted from the DB'}); 
         }).catch((reason)=>{
           return next({ statusCode:500, error: true, errormessage: "Error while trying to get user " + req.params.username + " : " + reason}); 
         })
@@ -651,7 +657,7 @@ app.get("/activeMatches", auth, (req,res,next) => {
 })
 
 
-// Delete a certain match given a defined ID
+// Return a certain match given a defined ID
 app.get("/matches/:id", auth,(req,res,next) => {// Return a certain match given a defined ID
   
   
@@ -853,7 +859,7 @@ app.post("/matchFound", auth, (req,res,next) => {
   
 })
 
-// Pusher Connect4 API to make a move
+// Pusher Connect4 API to make a move in the match
 app.post("/doMove", auth, (req,res,next) => {
   if(req.body.matchId == null || req.body.columnIndex == null)
     return next({ statusCode:400, error: true, errormessage: "Body must contain matchId and columnIndex fields"});

@@ -31,7 +31,7 @@ const passport = require("passport"); // authentication middleware for Express
 const passportHTTP = require("passport-http"); // implements Basic and Digest authentication for HTTP (used for /login endpoint)
 const jsonwebtoken = require("jsonwebtoken"); // JWT generation
 const jwt = require("express-jwt"); // JWT parsing middleware for express
-const cors = require("cors"); // Enable CORS middleware
+const cors = require("cors"); // Enable CORS middleware to 
 const app = express();
 const auth = jwt({ secret: process.env.JWT_SECRET });
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
@@ -58,7 +58,15 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
     res.status(200).json({
         api_version: "0.0.1",
-        endpoints: ["/users", "/matches", "activeMatches", "/messages", "/matchFound", "/doMove", "/communicateLoss", "/requestState", "/sendState", "/friendRequests", "/login"]
+        endpoints: [
+            "/users", '/users/addModerator', '/users/searchForUsers', '/users/setModerator/', '/users/:username/profilepic', '/users/setFirstAccess',
+            '/users/pairUserForAMatch', '/users/friendsWithStats', '/users/allUserWithStats', '/users/:username', '/users/:username/stats',
+            '/users/setLookingForAMatch/:value', '/users/:username/friends', '/users/:username/friendsRequests', '/users/sendFriendship/:username',
+            '/users/acceptFriendship/:friend', '/users/rejectFriendship/:friend',
+            "/matches", "/activeMatches", "/matches/:id", "/matches/:id/players", "/matches/:id/turn", "/matches/:id/setDraw", "/matches/:id/setLoser",
+            "/messages", "/matchFound", "/doMove", "/communicateLoss", "/requestState", "/sendState", "/friendRequests",
+            "/login"
+        ]
     });
 });
 // Main route of users
