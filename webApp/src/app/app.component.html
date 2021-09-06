@@ -20,7 +20,7 @@
           <button (click)="this.clientHttp.logout()" mat-menu-item>Logout</button>
         </mat-menu>
 </mat-toolbar>
-<mat-toolbar *ngIf="this.connect4service.canLeaveTheGame || this.clientHttp.get_token() == ''" color="primary">
+<mat-toolbar *ngIf="this.connect4service.canLeaveTheGame  || this.clientHttp.get_token() == ''" color="primary">
   <span>Connect 4</span>
 </mat-toolbar>
   <router-outlet></router-outlet>

@@ -21,10 +21,6 @@ export class AppComponent {
     this.connect4service.canLeaveTheGame = false;
   }
 
-  is_allowed():boolean{
-    return localStorage.getItem('connect4_token') != null && localStorage.getItem('connect4_token') != ''
-  }
-
   // We listen for broswer close
   @HostListener('window:beforeunload', [ '$event' ])
   beforeUnloadHandler(event) {

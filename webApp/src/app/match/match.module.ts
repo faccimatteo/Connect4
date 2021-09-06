@@ -13,7 +13,6 @@ import { ThemingService } from './shared/services/theming/theming.service';
 import RootState from './ngxs/state/root.state';
 import { ChatComponent } from './modules/connect4/components/chat/chat.component';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
 
 
 @NgModule({

@@ -120,7 +120,7 @@ app.route('/users').get(auth, (req,res,next) => {// Return all users
       // Setting of moderator, this endpoint is used to register moderators and normal users
       u.moderator = false;
       // Setting of firstAccess
-      u.firstAccess = true;
+      u.firstAccess = false;
 
       u.setDefault();
 
@@ -134,7 +134,7 @@ app.route('/users').get(auth, (req,res,next) => {// Return all users
           id: data._id,
           username: data.username,
           moderator: data.moderator,
-          firstAccess: true,
+          firstAccess: false,
         };
 
         console.log("Registration succedeed. Token has been generatd" );

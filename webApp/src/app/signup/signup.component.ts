@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { ClientHttpService } from '../client-http.service';
 import { RoutingService } from '../routing.service';
@@ -27,15 +28,23 @@ export class SignupComponent implements OnInit {
     profilepic: [null, Validators.required],
   });
 
-  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:Router) {}
+  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:Router, private sanitizer: DomSanitizer) {}
 
   ngOnInit() {
   }
 
   // Cannot be called before handleUpload
   set_user(username:string, name:string, surname:string, password:string, confirm_password:string){
+
+    // Sanitizing data
+    var username_sanitized = this.sanitizer.sanitize(1,username)
+    var name_sanitized = this.sanitizer.sanitize(1,name)
+    var surname_sanitized = this.sanitizer.sanitize(1,surname)
+    var password_sanitized = this.sanitizer.sanitize(1,password)
+    var confirm_password_sanitized = this.sanitizer.sanitize(1,confirm_password)
+
     this.differentPassword = false;
-    if(password != confirm_password)
+    if(password_sanitized != confirm_password_sanitized)
       this.differentPassword = true;
     else{
       this.http.find_user(username).subscribe(
@@ -47,10 +56,8 @@ export class SignupComponent implements OnInit {
 
           // If the user is not present inside the db
           else{
-            this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
-              this.http.on_first_login().subscribe(() => {
-                this.router.navigate(['/home']);
-              })
+            this.http.register_user(username_sanitized, name_sanitized, surname_sanitized, password_sanitized, this.profilepic).subscribe(()=>{
+              this.router.navigate(['/home']);
             })
           }
         }

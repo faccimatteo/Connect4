@@ -98,6 +98,8 @@ export class ClientHttpService {
     }, options).pipe(
       tap((response:any) => {
         // Once I get the response with the token from the API call
+        this.token = response.token;
+        this.remember = false;
         localStorage.setItem('connect4_token', response.token);
       }),
       catchError((error: any) => throwError(error.error || 'Server error on requesting register_user'))
