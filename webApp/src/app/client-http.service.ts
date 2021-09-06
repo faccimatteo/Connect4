@@ -163,25 +163,6 @@ export class ClientHttpService {
     );
   }
 
-  delete_friends(username:string):Observable<any>{
-
-    // Creating header for the get request
-    const options = {
-      headers: new HttpHeaders({
-        'Authorization': 'Bearer ' + localStorage.getItem('connect4_token'),
-        'Cache-Control': 'no-cache',
-        'Content-Type':  'application/json',
-      })
-    };
-
-    return this.http.delete(this.url + '/users/' + username, options).pipe(
-      tap(() => {
-
-      }),
-      catchError((error: any) => throwError(error.error || 'Server error on requesting delete_friends'))
-    );
-  }
-
   get_friendship_requests():Observable<any>{
 
     // Creating header for the get request

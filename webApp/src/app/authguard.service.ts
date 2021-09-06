@@ -26,16 +26,6 @@ export class AuthguardService implements CanActivate{
         localStorage.setItem('connect4_token','')
         return false
       }
-      // If a moderator has deleted a user
-      this.clientHttp.find_user(this.clientHttp.get_username()).subscribe(() => {
-        // User found
-        return true;
-      },()=>{
-        // User not found or other server problems
-        localStorage.setItem('connect4_token','');
-        // We have an error in our server side part. We log out the user
-        return false;
-      })
       return true;
     }else{
       this.router.navigate(['login']);

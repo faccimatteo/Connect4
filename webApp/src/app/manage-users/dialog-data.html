@@ -1,6 +1,8 @@
-<h1 mat-dialog-title>{{data.username}}, sei sicuro di voler eliminare l'utente</h1>
+<h1 mat-dialog-title>{{data.username}}, sei sicuro di voler eliminare l'utente?</h1>
+<div mat-dialog-content>
+</div>
 <div mat-dialog-actions>
   <button mat-button (click)="onNoClick()">Annulla</button>
-  <button mat-button (click)="deleteUser()" cdkFocusInitial>Conferema</button>
+  <button mat-button (click)="deleteUser()" cdkFocusInitial>Conferma</button>
 </div>
 

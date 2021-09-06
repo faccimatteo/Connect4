@@ -100,7 +100,7 @@ app.route('/users').get(auth, (req,res,next) => {// Return all users
   user.getModel().find({}).then((users)=>{
     return res.status(200).json(users);
   }).catch((reason)=>{
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + reason}); 
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to find users: " + reason}); 
   })
 }).post((req,res,next) =>{
    // Adding a new user
@@ -142,7 +142,7 @@ app.route('/users').get(auth, (req,res,next) => {// Return all users
 
         return res.status(200).json({ error: false, errormessage: "",message: "User successfully added with the id below", id: data._id, token: token_signed });
       }).catch((reason) => {
-          return next({statusCode:500, error:true, errormessage: "DB error: " + reason});
+          return next({statusCode:500, error:true, errormessage: "Error while trying to register a user: " + reason});
       })
     }
 });
@@ -176,7 +176,7 @@ app.post('/users/addModerator', auth, (req,res,next) => {
       return res.status(200).json({ error: false, errormessage: "",message: "Moderator successfully added with the id below", id: data._id });
     }).catch((reason) => {
       // Handle even the case if the user is a duplicate
-      return next({statusCode:500, error:true, errormessage: "DB error: " + reason});
+      return next({statusCode:500, error:true, errormessage: "Error while trying to register a moderator: " + reason});
     })
   }
 });
@@ -226,7 +226,7 @@ app.post('/users/setModerator/', auth, (req,res,next) => {
     //getting the use with the username and update the corrispondent fields
     user.getModel().updateOne({username:req.user.username},{$set: {password:req.body.password, name:req.body.name, surname:req.body.surname, profilePic:req.body.profilePic}}, null, (err, response)=>{
       if(err != null)
-        return next({statusCode:500, error:true, errormessage: 'DB error: ' + err});
+        return next({statusCode:500, error:true, errormessage: 'Error while trying to reset credentials: ' + err});
       else{
         return res.status(200).json({error: false, errormessage:"", message: "User " + req.user.username + " correctly updated"});
       }
@@ -245,7 +245,7 @@ app.get('/users/:username/profilepic', auth, (req, res, next) => {
         return res.status(200).json({"profilepic": response.profilePic});
       
   }).catch((error) => {
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + error});
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to get profilepic: " + error});
   })
 });
 
@@ -272,7 +272,7 @@ app.get('/users/setFirstAccess', auth, (req, res, next) => {
         
       
   }).catch((error) => {
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + error});
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to set user's first access: " + error});
   })
 });
 
@@ -289,7 +289,7 @@ app.get('/users/pairUserForAMatch', auth, (req,res,next) => {
       return res.status(200).json({user:null});
     }
   }).catch((error)=>{
-    return next({statusCode:500, error: true, errormessage: "DB error: " + error});
+    return next({statusCode:500, error: true, errormessage: "Error while trying to pair user for a match: " + error});
   })
   
 })
@@ -331,7 +331,7 @@ app.get('/users/friendsWithStats', auth, (req,res,next) => {
         Promise.all(myPromises).then(()=>{
           return res.status(200).json({result:friends_with_stats}); 
         }).catch((reason)=>{
-          return next({ statusCode:500, error: true, errormessage: "DB error: " + reason});
+          return next({ statusCode:500, error: true, errormessage: "Error while trying to get result from a promise: " + reason});
         })
       })
     })
@@ -395,7 +395,7 @@ app.route('/users/:username').get((req,res,next) => {
     else
       return res.status(200).json({user: response});
   }).catch((reason)=>{
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + reason}); 
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to get user: " + reason}); 
   })
 
 }).delete(auth, (req,res,next)=>{// Delete a user with a certain username
@@ -554,7 +554,7 @@ app.get('/users/acceptFriendship/:friend', auth, (req,res,next) => {
         return next({ statusCode:501, error: true, errormessage: 'User ' + friendUser.username + ' is not inside pendingFriendsRequest of user ' + req.user.username}); 
     })
   }).catch((error)=>{
-    return next({ statusCode:500, error: true, errormessage: "DB error: " + error}); 
+    return next({ statusCode:500, error: true, errormessage: "Error while trying to accept user: " + error}); 
   })
   
 })

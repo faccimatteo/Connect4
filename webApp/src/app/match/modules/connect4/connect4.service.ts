@@ -59,34 +59,35 @@ export class Connect4Service {
 
   // We are sure that we have already received all the data from match at this point
   public newGame(): void {
-      this.canLeaveTheGame = true;
-      this.store.dispatch(new StartNewGame(this.matchId));
-      // We create the channel and we subscribe on it
-      this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
-        cluster: 'eu'
-      });
-      this.channel = this.pusher.subscribe(this.matchId);
+    this.matches.getPlayers(this.matchId).subscribe((response) => {
+      if(response.players.includes(this.clientHttp.get_username()))
+        this.canLeaveTheGame = true;
+        this.store.dispatch(new StartNewGame(this.matchId));
+        // We create the channel and we subscribe on it
+        this.pusher = new Pusher('2eb653c8780c9ebbe91e', {
+          cluster: 'eu'
+        });
+        this.channel = this.pusher.subscribe(this.matchId);
 
-      // Listening on the channel waiting for the next move
-      this.channel.bind('nextMove', (data) => {
-        this.matches.getPlayers(this.matchId).subscribe((response) => {
+        // Listening on the channel waiting for the next move
+        this.channel.bind('nextMove', (data) => {
+          this.matches.getPlayers(this.matchId).subscribe((response) => {
 
-          // We check if we actually need to update our board status (because if we are the sender of the event we don't actually need to update that)
+            // We check if we actually need to update our board status (because if we are the sender of the event we don't actually need to update that)
 
-          if(response.players[data.playerIndex] != this.clientHttp.get_username()){
-            const availableSlotIndex = this.findAvailableSlot(data.columnIndex);
-            const byPlayerIndex = data.playerIndex === 1 ? 2: 1;
-            this.store.dispatch(new UpdateBoard(availableSlotIndex, byPlayerIndex));
-            // We need to convert the index of the player in PlayerIndex
-            // We received the move from the opponent so we have to change byPlayerIndex
-            this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: byPlayerIndex });
+            if(response.players[data.playerIndex] != this.clientHttp.get_username()){
+              const availableSlotIndex = this.findAvailableSlot(data.columnIndex);
+              const byPlayerIndex = data.playerIndex === 1 ? 2: 1;
+              this.store.dispatch(new UpdateBoard(availableSlotIndex, byPlayerIndex));
+              // We need to convert the index of the player in PlayerIndex
+              // We received the move from the opponent so we have to change byPlayerIndex
+              this.diskAddedSubject.next({ slotFilled: availableSlotIndex, byPlayerIndex: byPlayerIndex });
 
-          }
+            }
+          })
         })
-      })
 
-      // If we are a spectator we need to request the current board configuration
-      this.matches.getPlayers(this.matchId).subscribe((response) => {
+        // If we are a spectator we need to request the current board configuration
         if(!response.players.includes(this.clientHttp.get_username())){
 
           // Requesting a correct configuration from one player
@@ -118,21 +119,16 @@ export class Connect4Service {
             })
           })
         }
-      })
 
-      // Listening on the channel waiting for opponent to exit from the game
-      this.channel.bind('communicateLoss', (data) => {
-        this.matches.getPlayers(this.matchId).subscribe((response) => {
-
+        // Listening on the channel waiting for opponent to exit from the game
+        this.channel.bind('communicateLoss', (data) => {
           const byPlayer = response.players.indexOf(data.winner) == 1 ? 2 : 1;
           // Dispatching of GameOver event passing the index of the defeated user
           const winConditionResolved: number[] = [];
           // We communicate the end of the match
           this.gameFinish({winConditionResolved, byPlayer})
-
         })
-      })
-      //this.gameStatusSubject.next({ status: 'newGame' });
+    })
   }
 
   public findAvailableSlot(columnIndex: number){

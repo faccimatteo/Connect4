@@ -16,15 +16,9 @@ $player2DiskColor: lightcoral;
 @import './app/match/modules/connect4/components/board/board.component';
 @import './app/match/modules/connect4/components/banner-info/banner-info.component';
 @import './app/match/modules/connect4/components/disk/disk.component';
-@import './app/match/modules/header/components/toolbar/toolbar.component';
-@import './app/match/modules/sidenav/components/sidenav/sidenav.component';
-@import './app/match/modules/footer/components/signature/signature.component';
 @mixin custom-components-theme($theme) {
     @include board-theme($theme);
     @include disk-theme($theme);
-    @include toolbar-theme($theme);
-    @include sidenav-theme($theme);
-    @include signature-theme($theme);
     @include banner-info-theme($theme);
 }
 

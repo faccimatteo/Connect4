@@ -27,7 +27,7 @@ export class SignupComponent implements OnInit {
     profilepic: [null, Validators.required],
   });
 
-  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:RoutingService) {}
+  constructor(private fb: FormBuilder, private http:ClientHttpService, private router:Router) {}
 
   ngOnInit() {
   }
@@ -49,7 +49,7 @@ export class SignupComponent implements OnInit {
           else{
             this.http.register_user(username, name, surname, password, this.profilepic).subscribe(()=>{
               this.http.on_first_login().subscribe(() => {
-                this.router.routing();
+                this.router.navigate(['/home']);
               })
             })
           }

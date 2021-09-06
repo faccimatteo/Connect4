@@ -96,7 +96,6 @@ export class ChatComponent implements OnInit{
                 this.ngOnInit();
               }
               else if(data.message == 'invite'){
-                console.log("invito ricevuto")
                 this.snackBarRef = this._snackBar.open(data.username + ' ti ha invitato ad un match', 'Accetta', {
                   duration: 5000
                 });
@@ -188,7 +187,6 @@ export class ChatComponent implements OnInit{
       // We lock the match search if we invited a friend
       this.snackBarRef.afterDismissed().subscribe(() => {
         this.connect4Service.cannotSearchMatch = false;
-        console.log(this.connect4Service.cannotSearchMatch)
       });
 
     })

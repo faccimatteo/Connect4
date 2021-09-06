@@ -9,8 +9,7 @@ export class RoutingService {
 
   constructor(private clientHttp:ClientHttpService, private router:Router) { }
 
-  // We use 'routing' function to route the user landed in the homepage,
-  // because we can't get access to local storage on 'ngOnInit'
+  // We use 'routing' function to route the user
   routing(){
     // If we have no token we redirect to login page
     if(localStorage.getItem('connect4_token') == null || localStorage.getItem('connect4_token') == '')

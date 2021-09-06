@@ -8,10 +8,7 @@ import { NgxsModule } from '@ngxs/store';
 import { environment } from '../../environments/environment.prod';
 import { MatchComponent, MatchDialogData } from './match.component';
 import { Connect4Module } from './modules/connect4/connect4.module';
-import { FooterModule } from './modules/footer/footer.module';
-import { HeaderModule } from './modules/header/header.module';
 import { MaterialModule } from './modules/material/material.modules';
-import { SidenavModule } from './modules/sidenav/sidenav.module';
 import { ThemingService } from './shared/services/theming/theming.service';
 import RootState from './ngxs/state/root.state';
 import { ChatComponent } from './modules/connect4/components/chat/chat.component';
@@ -28,9 +25,6 @@ import { RouterModule } from '@angular/router';
       BrowserModule,
       BrowserAnimationsModule,
       Connect4Module,
-      HeaderModule,
-      SidenavModule,
-      FooterModule,
       NgxsModule.forRoot([...RootState], {
           developmentMode: !environment.production
       }),
