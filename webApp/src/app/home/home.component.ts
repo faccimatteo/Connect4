@@ -1,11 +1,7 @@
 import { Component, OnChanges, OnInit } from '@angular/core';
 import { ClientHttpService } from '../client-http.service';
-import { RoutingService } from '../routing.service';
 import jwt_decode from "jwt-decode";
 import { AppComponent } from '../app.component';
-import { MatchComponent } from '../match/match.component';
-import { ChangeDetectorRef } from '@angular/core';
-import { CanActivate } from '@angular/router';
 
 interface TokenData {
   id:string,

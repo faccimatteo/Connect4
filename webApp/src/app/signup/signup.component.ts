@@ -3,7 +3,6 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { ClientHttpService } from '../client-http.service';
-import { RoutingService } from '../routing.service';
 
 @Component({
   selector: 'app-reset-password',

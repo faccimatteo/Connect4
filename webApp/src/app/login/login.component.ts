@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { ClientHttpService } from '../client-http.service';
-import { RoutingService } from '../routing.service';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +20,7 @@ export class LoginComponent {
     remember_me: null
   });
 
-  constructor(private fb: FormBuilder, private clientHttp:ClientHttpService, private router:RoutingService, private sanitizer: DomSanitizer) {}
+  constructor(private fb: FormBuilder, private clientHttp:ClientHttpService, private router:Router, private sanitizer: DomSanitizer) {}
 
   ngOnInit() {
   }
@@ -31,7 +31,11 @@ export class LoginComponent {
     var password_sanitized = this.sanitizer.sanitize(1,password)
     this.clientHttp.login(username_sanitized, password_sanitized, remember_me).subscribe(() => {
       // At this point the user has already done the first access so we don't need to care about setting the token
-      this.router.routing();
+      if(this.clientHttp.is_first_access() && this.clientHttp.is_moderator())
+        this.router.navigate(['/reset']);
+      else{
+        this.router.navigate(['/home'])
+      }
     }, () => {
       this.error_message = 'Login failed. Check your credentials or try again later';
     });

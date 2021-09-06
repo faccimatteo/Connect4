@@ -8,6 +8,7 @@ import { LoginComponent } from './login/login.component';
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { MatchComponent } from './match/match.component';
 import { MatchesListComponent } from './matches-list/matches-list.component';
+import { ModeratorguardService } from './moderatorguard.service';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { RegisterModeratorComponent } from './register-moderator/register-moderator.component';
 import { ResetCredentialsComponent } from './reset-credentials/reset-credentials.component';
@@ -23,12 +24,12 @@ const routes: Routes = [
   { path: 'home/searchFriends', component: SearchFriendsComponent, canActivate:[AuthguardService]},
   { path: 'home/matchList', component: MatchesListComponent, canActivate:[AuthguardService]},
   { path: 'friendshipRequests', component: FriendshipRequestsComponent, canActivate:[AuthguardService]},
-  { path: 'manageUsers', component: ManageUsersComponent, canActivate:[AuthguardService]},
+  { path: 'manageUsers', component: ManageUsersComponent, canActivate:[AuthguardService, ModeratorguardService]},
   { path: 'match/:id', component: MatchComponent, canActivate:[AuthguardService]},
   { path: 'signup', component: SignupComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'reset', component: ResetCredentialsComponent, canActivate:[AuthguardService]},
-  { path: 'registerModerator', component: RegisterModeratorComponent, canActivate:[AuthguardService]},
+  { path: 'reset', component: ResetCredentialsComponent, canActivate:[AuthguardService, ModeratorguardService]},
+  { path: 'registerModerator', component: RegisterModeratorComponent, canActivate:[AuthguardService, ModeratorguardService]},
   { path: '**', component: PageNotFoundComponent} // Has to be the last routes path
 ];
 
