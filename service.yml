@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: connect4-service
+spec:
+  selector:
+    app: connect4
+  type: NodePort
+  ports:
+    - name: front-end
+      protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30008
+    - name: back-end
+      protocol: TCP
+      port: 443
+      targetPort: 443  
+      nodePort: 30009

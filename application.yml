@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connect4
+  labels:
+    app: connect4
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: connect4
+  template:
+    metadata:
+      labels:
+        app: connect4
+    spec:
+      containers:
+      - name: connect4-fe
+        image: matteofacci99/connect4_fe:latest
+        ports:
+        - containerPort: 80
+      - name: connect4-be
+        image: docker.io/matteofacci99/connect4_be:latest
+        ports:
+        - containerPort: 443
