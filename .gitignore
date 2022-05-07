@@ -1,1 +1,3 @@
-webApp\node_modules
+be/.env
+fe/.browserslistrc
+fe/.editorconfig
