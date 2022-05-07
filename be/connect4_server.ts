@@ -18,7 +18,7 @@ colors.enabled = true;
 
 import mongoose = require('mongoose');
 import * as match from './matches';
-import * as user from './users';
+import * as user from './src/users';
 
 import express = require('express');
 
