@@ -1,5 +1,5 @@
 # Connect4 
-![Connect4 logo](https://github.com/faccimatteo/Connect4/logo/connect4_logo.png)
+![Connect4 logo](https://github.com/faccimatteo/Connect4/blob/main/logo/connect4_logo.png)
 
 Connect4, a MEAN stack web app developed for TAW project's exam in Ca' Foscari UNIVE.
 
