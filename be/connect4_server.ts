@@ -4,8 +4,15 @@ if (result.error) {
   console.log("Unable to load \".env\" file. Please provide one to store the JWT secret key");
   process.exit(-1);
 }
-if( !process.env.JWT_SECRET ) {
+if(!process.env.JWT_SECRET) {
   console.log("\".env\" file loaded but JWT_SECRET=<secret> key-value pair was not found");
+  process.exit(-1);
+}
+if(!process.env.PUSHER_APPID ||
+   !process.env.PUSHER_KEY ||
+   !process.env.PUSHER_SECRET ||
+   !process.env.PUSHER_CLUSTER) {
+  console.log("\".env\" file loaded but pusher key-value pairs were not found");
   process.exit(-1);
 }
 
@@ -55,7 +62,6 @@ declare global {
 const app = express();
 
 const auth = jwt( {secret: process.env.JWT_SECRET} );
-
 // cors make possibile to send request from a website to another website on the broswer by adding a section on the header
 app.use(cors());
 
@@ -67,10 +73,10 @@ app.use(express.urlencoded({limit: '50mb'}));
 const Pusher = require("pusher");
 
 const pusher = new Pusher({
-  appId: "1242312",
-  key: "2eb653c8780c9ebbe91e",
-  secret: "cedef58c4729c1d12c7c",
-  cluster: "eu",
+  appId: process.env.PUSHER_APPID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
   useTLS: true
 });
 
