@@ -2,7 +2,7 @@
 
 Connect4, a MEAN stack web app developed for TAW project's exam in Ca' Foscari UNIVE.
 
-## What can I do? 
+## What can you do? 
 In this webapp, you are allowed to play against randoms or with friends at Connect4, chat among players and friends and and spectate other players' matches.
 
 ## Installation 
